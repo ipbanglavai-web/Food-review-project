@@ -1,0 +1,115 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Facebook, Youtube, Instagram, Twitter, MessageSquare, MapPin, Mail, Phone } from 'lucide-react';
+
+export const Footer: React.FC = () => {
+  return (
+    <footer className="bg-neutral-950 text-neutral-300 pt-16 pb-8 border-t border-neutral-900">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 border-b border-neutral-800 pb-12">
+          
+          {/* Logo & About */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-600 font-bold text-white shadow-md shadow-red-900/50">
+                F
+              </span>
+              <span className="text-xl font-black tracking-tight text-white font-sans">
+                FoodReview<span className="text-yellow-500">BD</span>
+              </span>
+            </div>
+            <p className="text-sm leading-relaxed text-neutral-400">
+              The premier platform for authentic food reviews, trusted culinary suggestions, and exclusive restaurant discounts across Bangladesh. Handpicked and reviewed by food experts.
+            </p>
+            <div className="flex space-x-4 pt-2">
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors">
+                <Facebook size={18} />
+              </a>
+              <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors">
+                <Youtube size={18} />
+              </a>
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors">
+                <Instagram size={18} />
+              </a>
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors">
+                <Twitter size={18} />
+              </a>
+            </div>
+          </div>
+
+          {/* Quick Links */}
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4">Quick Links</h3>
+            <ul className="space-y-2.5 text-sm">
+              <li>
+                <Link to="/" className="hover:text-red-500 transition-colors">Home Feed</Link>
+              </li>
+              <li>
+                <a href="#reviews" className="hover:text-red-500 transition-colors">Top Reviews</a>
+              </li>
+              <li>
+                <a href="#offers" className="hover:text-red-500 transition-colors">Restaurant Offers</a>
+              </li>
+              <li>
+                <Link to="/about" className="hover:text-red-500 transition-colors">About Us</Link>
+              </li>
+              <li>
+                <Link to="/contact" className="hover:text-red-500 transition-colors">Contact Support</Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Popular Categories */}
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4">Popular Food</h3>
+            <ul className="space-y-2.5 text-sm">
+              <li>
+                <span className="hover:text-red-500 transition-colors cursor-pointer">Best Old Dhaka Biriyani</span>
+              </li>
+              <li>
+                <span className="hover:text-red-500 transition-colors cursor-pointer">Gourmet Beef Burgers</span>
+              </li>
+              <li>
+                <span className="hover:text-red-500 transition-colors cursor-pointer">Thin Crust Woodfired Pizzas</span>
+              </li>
+              <li>
+                <span className="hover:text-red-500 transition-colors cursor-pointer">Authentic Chinese Platters</span>
+              </li>
+              <li>
+                <span className="hover:text-red-500 transition-colors cursor-pointer">Traditional Desserts & Coffee</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Contact Details */}
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4">Contact Info</h3>
+            <ul className="space-y-3.5 text-sm text-neutral-400">
+              <li className="flex items-start gap-2.5">
+                <MapPin size={18} className="text-red-500 shrink-0 mt-0.5" />
+                <span>Road 11, Banani Commercial Area, Dhaka - 1213, Bangladesh</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Mail size={16} className="text-red-500 shrink-0" />
+                <span>support@foodreviewbd.com</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Phone size={16} className="text-red-500 shrink-0" />
+                <span>+880 1712-345678</span>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+        {/* Footer Bottom */}
+        <div className="flex flex-col sm:flex-row items-center justify-between pt-8 text-xs text-neutral-500">
+          <p>© {new Date().getFullYear()} Food Review Bangladesh. All Rights Reserved.</p>
+          <p className="mt-2 sm:mt-0">
+            Developed with ❤️ by <span className="text-neutral-300 font-bold hover:text-red-500 transition-colors cursor-pointer">Premium Dev Studio BD</span>
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+};

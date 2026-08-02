@@ -1,0 +1,129 @@
+{
+  "entities": {
+    "Category": {
+      "title": "Category",
+      "description": "Food or restaurant category classifications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" }
+      },
+      "required": ["id", "name", "type"]
+    },
+    "Banner": {
+      "title": "Banner",
+      "description": "Hero carousel sliding banners featured on home screen",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "linkUrl": { "type": "string" },
+        "title": { "type": "string" },
+        "order": { "type": "number" }
+      },
+      "required": ["id", "imageUrl", "linkUrl", "title", "order"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Detailed restaurant and culinary review articles",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "restaurantName": { "type": "string" },
+        "foodCategory": { "type": "string" },
+        "rating": { "type": "number" },
+        "thumbnail": { "type": "string" },
+        "thumbnailClickLink": { "type": "string" },
+        "description": { "type": "string" },
+        "shortDescription": { "type": "string" },
+        "location": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "facebookUrl": { "type": "string" },
+        "youtubeUrl": { "type": "string" },
+        "tags": { "type": "array" },
+        "featured": { "type": "boolean" },
+        "publishDate": { "type": "string" },
+        "views": { "type": "number" },
+        "likes": { "type": "number" },
+        "seoTitle": { "type": "string" },
+        "seoDescription": { "type": "string" },
+        "adminName": { "type": "string" }
+      },
+      "required": ["id", "restaurantName", "foodCategory", "rating", "thumbnail", "description", "shortDescription", "location"]
+    },
+    "Offer": {
+      "title": "Offer",
+      "description": "Discount coupon offers and promotional deals",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "restaurantName": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "caption": { "type": "string" },
+        "couponCode": { "type": "string" },
+        "shortDescription": { "type": "string" },
+        "discountPercentage": { "type": "number" },
+        "expiryDate": { "type": "string" },
+        "category": { "type": "string" },
+        "featured": { "type": "boolean" },
+        "status": { "type": "string" },
+        "adminName": { "type": "string" }
+      },
+      "required": ["id", "restaurantName", "caption", "couponCode", "shortDescription", "discountPercentage", "expiryDate", "category", "status"]
+    },
+    "Moderator": {
+      "title": "Moderator",
+      "description": "Staff, admins, and content reviewers who moderate reviews and offers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "nid": { "type": "string" },
+        "role": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "name", "phone", "email", "nid", "role", "status"]
+    },
+    "AppSettings": {
+      "title": "AppSettings",
+      "description": "Global application branding settings",
+      "type": "object",
+      "properties": {
+        "desktopLogo": { "type": "string" },
+        "mobileLogo": { "type": "string" },
+        "siteName": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["siteName", "description"]
+    }
+  },
+  "firestore": {
+    "categories": {
+      "schema": "Category",
+      "description": "Food and restaurant categories"
+    },
+    "banners": {
+      "schema": "Banner",
+      "description": "Hero slideshow banners"
+    },
+    "reviews": {
+      "schema": "Review",
+      "description": "Detailed restaurant food reviews"
+    },
+    "offers": {
+      "schema": "Offer",
+      "description": "Promotional discounts and coupon codes"
+    },
+    "moderators": {
+      "schema": "Moderator",
+      "description": "Staff registry for login verification"
+    },
+    "settings": {
+      "schema": "AppSettings",
+      "description": "Site global preferences"
+    }
+  }
+}
