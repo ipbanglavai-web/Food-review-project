@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, Search, User, Shield, LogOut, CheckCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
 
 interface NavbarProps {
@@ -141,106 +140,95 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection 
         </div>
       </header>
 
-      {/* Mobile Drawer (Left-to-Right Animated) */}
-      <AnimatePresence>
-        {isDrawerOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsDrawerOpen(false)}
-              className="fixed inset-0 z-50 bg-black/50"
-            />
+      {/* Mobile Drawer */}
+      {isDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div
+            onClick={() => setIsDrawerOpen(false)}
+            className="fixed inset-0 bg-black/50 transition-opacity"
+          />
 
-            {/* Content Panel */}
-            <motion.div
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 top-0 z-50 flex w-4/5 max-w-sm flex-col bg-white p-6 shadow-2xl"
-            >
-              <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 font-bold text-white shadow-sm">
-                    F
-                  </span>
-                  <span className="text-lg font-black text-black">
-                    FoodReview<span className="text-yellow-500">BD</span>
-                  </span>
-                </div>
+          {/* Content Panel */}
+          <div className="relative z-10 flex w-4/5 max-w-sm flex-col bg-white p-6 shadow-2xl h-full transform transition-transform duration-300 ease-in-out">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 font-bold text-white shadow-sm">
+                  F
+                </span>
+                <span className="text-lg font-black text-black">
+                  FoodReview<span className="text-yellow-500">BD</span>
+                </span>
+              </div>
+              <button
+                onClick={() => setIsDrawerOpen(false)}
+                className="rounded-full p-1.5 hover:bg-neutral-100 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Navigation Items */}
+            <div className="flex-1 py-8 space-y-5">
+              {menuItems.map((item) => (
                 <button
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="rounded-full p-1.5 hover:bg-neutral-100 transition"
+                  key={item.name}
+                  onClick={() => handleMenuClick(item)}
+                  className="flex w-full items-center text-left text-lg font-bold text-neutral-800 hover:text-red-600 py-1"
                 >
-                  <X size={20} />
+                  {item.name}
                 </button>
-              </div>
+              ))}
+            </div>
 
-              {/* Navigation Items */}
-              <div className="flex-1 py-8 space-y-5">
-                {menuItems.map((item) => (
-                  <button
-                    key={item.name}
-                    onClick={() => handleMenuClick(item)}
-                    className="flex w-full items-center text-left text-lg font-bold text-neutral-800 hover:text-red-600 py-1"
-                  >
-                    {item.name}
-                  </button>
-                ))}
-              </div>
-
-              {/* Footer Account Status inside Drawer */}
-              <div className="border-t border-neutral-100 pt-6">
-                {currentUser ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-9 w-9 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold">
-                        {currentUser.name[0]}
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-neutral-900">{currentUser.name}</div>
-                        <div className="text-xs text-neutral-500 capitalize">{currentUser.role}</div>
-                      </div>
+            {/* Footer Account Status inside Drawer */}
+            <div className="border-t border-neutral-100 pt-6">
+              {currentUser ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-9 w-9 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold">
+                      {currentUser.name[0]}
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Link
-                        to="/admin"
-                        onClick={() => setIsDrawerOpen(false)}
-                        className="flex items-center justify-center gap-1.5 rounded-lg bg-red-50 py-2.5 text-xs font-bold text-red-600"
-                      >
-                        <Shield size={14} />
-                        Dashboard
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setIsDrawerOpen(false);
-                          logout();
-                        }}
-                        className="flex items-center justify-center gap-1.5 rounded-lg bg-neutral-50 py-2.5 text-xs font-bold text-neutral-600 hover:bg-red-50 hover:text-red-600 transition"
-                      >
-                        <LogOut size={14} />
-                        Log Out
-                      </button>
+                    <div>
+                      <div className="text-sm font-bold text-neutral-900">{currentUser.name}</div>
+                      <div className="text-xs text-neutral-500 capitalize">{currentUser.role}</div>
                     </div>
                   </div>
-                ) : (
-                  <Link
-                    to="/login"
-                    onClick={() => setIsDrawerOpen(false)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-3 text-sm font-bold text-white shadow-lg shadow-red-100 hover:bg-red-700"
-                  >
-                    <User size={16} />
-                    Sign In Account
-                  </Link>
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsDrawerOpen(false)}
+                      className="flex items-center justify-center gap-1.5 rounded-lg bg-red-50 py-2.5 text-xs font-bold text-red-600"
+                    >
+                      <Shield size={14} />
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setIsDrawerOpen(false);
+                        logout();
+                      }}
+                      className="flex items-center justify-center gap-1.5 rounded-lg bg-neutral-50 py-2.5 text-xs font-bold text-neutral-600 hover:bg-red-50 hover:text-red-600 transition"
+                    >
+                      <LogOut size={14} />
+                      Log Out
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-3 text-sm font-bold text-white shadow-lg shadow-red-100 hover:bg-red-700"
+                >
+                  <User size={16} />
+                  Sign In Account
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

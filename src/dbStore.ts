@@ -280,24 +280,32 @@ export async function initializeStore(): Promise<void> {
     const bannersSnap = await getDocs(collection(db, 'banners'));
     if (!bannersSnap.empty) {
       cachedState.banners = bannersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Banner)).sort((a,b) => a.order - b.order);
+    } else if (cachedState.banners.length === 0) {
+      cachedState.banners = [...INITIAL_STATE.banners];
     }
 
     // Fetch Categories
     const categoriesSnap = await getDocs(collection(db, 'categories'));
     if (!categoriesSnap.empty) {
       cachedState.categories = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+    } else if (cachedState.categories.length === 0) {
+      cachedState.categories = [...INITIAL_STATE.categories];
     }
 
     // Fetch Reviews
     const reviewsSnap = await getDocs(collection(db, 'reviews'));
     if (!reviewsSnap.empty) {
       cachedState.reviews = reviewsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+    } else if (cachedState.reviews.length === 0) {
+      cachedState.reviews = [...INITIAL_STATE.reviews];
     }
 
     // Fetch Offers
     const offersSnap = await getDocs(collection(db, 'offers'));
     if (!offersSnap.empty) {
       cachedState.offers = offersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Offer));
+    } else if (cachedState.offers.length === 0) {
+      cachedState.offers = [...INITIAL_STATE.offers];
     }
 
     // Fetch Moderators
@@ -307,6 +315,8 @@ export async function initializeStore(): Promise<void> {
         const d = doc.data();
         return { id: doc.id, ...d } as Moderator;
       });
+    } else if (cachedState.moderators.length === 0) {
+      cachedState.moderators = [...INITIAL_STATE.moderators];
     }
 
     // Fetch Settings
@@ -340,7 +350,8 @@ function saveLocalCache() {
 
 // EXPORTED GETTERS
 export function getBanners(): Banner[] {
-  return [...cachedState.banners].sort((a, b) => a.order - b.order);
+  const b = cachedState.banners.length > 0 ? cachedState.banners : INITIAL_STATE.banners;
+  return [...b].sort((a, b) => a.order - b.order);
 }
 
 export function getCategories(): Category[] {

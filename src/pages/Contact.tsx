@@ -75,49 +75,57 @@ export const Contact: React.FC = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Your Full Name</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 uppercase tracking-wider mb-1.5">
+                        Your Full Name
+                      </label>
                       <input
                         type="text"
                         required
                         placeholder="Abrar Hossain"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-4 py-2.5 border border-neutral-200 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-neutral-50/70 border border-neutral-200/90 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 focus:bg-white transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Email Address</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 uppercase tracking-wider mb-1.5">
+                        Email Address
+                      </label>
                       <input
                         type="email"
                         required
                         placeholder="abrar@example.com"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full px-4 py-2.5 border border-neutral-200 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-neutral-50/70 border border-neutral-200/90 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 focus:bg-white transition-all shadow-2xs"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Subject Title</label>
+                    <label className="block text-[11px] font-extrabold text-neutral-500 uppercase tracking-wider mb-1.5">
+                      Subject Title
+                    </label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. Restaurant Review Sponsorship"
                       value={formData.subject}
                       onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-neutral-200 rounded-xl text-sm"
+                      className="w-full px-4 py-2.5 bg-neutral-50/70 border border-neutral-200/90 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 focus:bg-white transition-all shadow-2xs"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Detailed Message</label>
+                    <label className="block text-[11px] font-extrabold text-neutral-500 uppercase tracking-wider mb-1.5">
+                      Detailed Message
+                    </label>
                     <textarea
                       required
                       placeholder="Type your questions or proposal here..."
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-neutral-200 rounded-xl text-sm h-36"
+                      className="w-full px-4 py-2.5 bg-neutral-50/70 border border-neutral-200/90 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 focus:bg-white transition-all shadow-2xs h-36 resize-y"
                     />
                   </div>
 

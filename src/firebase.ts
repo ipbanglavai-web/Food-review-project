@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeFirestore, getFirestore, collection, getDocs, doc, setDoc, writeBatch } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, collection, getDocs, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
 
 // Configuration from generated Firebase credentials
 const firebaseConfig = {
@@ -270,43 +270,58 @@ const DEFAULT_SETTINGS = {
 // Seed function to initialize Firestore collections
 export async function seedDatabase() {
   try {
+    // Check and seed banners
+    const bannersSnap = await getDocs(collection(db, 'banners'));
+    if (bannersSnap.empty) {
+      console.log("Seeding banners...");
+      for (const banner of DEFAULT_BANNERS) {
+        await setDoc(doc(db, 'banners', banner.id), banner);
+      }
+    }
+
+    // Check and seed categories
     const categoriesSnap = await getDocs(collection(db, 'categories'));
-    if (!categoriesSnap.empty) {
-      console.log("Database already seeded.");
-      return;
+    if (categoriesSnap.empty) {
+      console.log("Seeding categories...");
+      for (const cat of DEFAULT_CATEGORIES) {
+        await setDoc(doc(db, 'categories', cat.id), cat);
+      }
     }
 
-    console.log("Seeding Database...");
-
-    // Batch seed categories
-    for (const cat of DEFAULT_CATEGORIES) {
-      await setDoc(doc(db, 'categories', cat.id), cat);
+    // Check and seed reviews
+    const reviewsSnap = await getDocs(collection(db, 'reviews'));
+    if (reviewsSnap.empty) {
+      console.log("Seeding reviews...");
+      for (const review of DEFAULT_REVIEWS) {
+        await setDoc(doc(db, 'reviews', review.id), review);
+      }
     }
 
-    // Batch seed banners
-    for (const banner of DEFAULT_BANNERS) {
-      await setDoc(doc(db, 'banners', banner.id), banner);
+    // Check and seed offers
+    const offersSnap = await getDocs(collection(db, 'offers'));
+    if (offersSnap.empty) {
+      console.log("Seeding offers...");
+      for (const offer of DEFAULT_OFFERS) {
+        await setDoc(doc(db, 'offers', offer.id), offer);
+      }
     }
 
-    // Batch seed reviews
-    for (const review of DEFAULT_REVIEWS) {
-      await setDoc(doc(db, 'reviews', review.id), review);
+    // Check and seed moderators
+    const modsSnap = await getDocs(collection(db, 'moderators'));
+    if (modsSnap.empty) {
+      console.log("Seeding moderators...");
+      for (const mod of DEFAULT_MODERATORS) {
+        await setDoc(doc(db, 'moderators', mod.id), mod);
+      }
     }
 
-    // Batch seed offers
-    for (const offer of DEFAULT_OFFERS) {
-      await setDoc(doc(db, 'offers', offer.id), offer);
+    // Seed settings if missing
+    const settingsDoc = await getDoc(doc(db, 'settings', 'app'));
+    if (!settingsDoc.exists()) {
+      await setDoc(doc(db, 'settings', 'app'), DEFAULT_SETTINGS);
     }
 
-    // Batch seed moderators
-    for (const mod of DEFAULT_MODERATORS) {
-      await setDoc(doc(db, 'moderators', mod.id), mod);
-    }
-
-    // Seed settings
-    await setDoc(doc(db, 'settings', 'app'), DEFAULT_SETTINGS);
-
-    console.log("Database successfully seeded with beautiful premium content!");
+    console.log("Database successfully seeded/verified!");
   } catch (error) {
     console.error("Error seeding database, falling back to mock layers:", error);
   }

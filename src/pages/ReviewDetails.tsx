@@ -32,6 +32,7 @@ export const ReviewDetails: React.FC = () => {
 
   // Find the current review
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
     if (id && reviews.length > 0) {
       const match = reviews.find((r) => r.id === id);
       if (match) {
@@ -130,12 +131,12 @@ export const ReviewDetails: React.FC = () => {
         {/* Title details */}
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="bg-red-50 text-red-600 text-xs font-black uppercase tracking-wider px-3 py-1 rounded">
+            <span className="bg-red-50 text-red-700 border border-red-100/80 text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-lg">
               {review.foodCategory}
             </span>
             {review.rating >= 4.7 && (
-              <span className="bg-yellow-400 text-black text-xs font-black px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                <Award size={12} />
+              <span className="bg-amber-50 text-amber-800 border border-amber-200/80 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
+                <Award size={13} className="text-amber-600" />
                 Recommended Badge
               </span>
             )}
@@ -146,8 +147,8 @@ export const ReviewDetails: React.FC = () => {
           </h1>
           
           <div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-semibold text-neutral-500">
-            <div className="flex items-center gap-1 bg-white border border-neutral-100 px-2.5 py-1 rounded-md text-neutral-700">
-              <Star size={14} fill="#eab308" className="text-yellow-500" />
+            <div className="flex items-center gap-1.5 bg-white border border-neutral-200/80 px-3 py-1 rounded-lg text-neutral-800 shadow-2xs">
+              <Star size={14} fill="#f59e0b" className="text-amber-500 shrink-0" />
               <span className="font-extrabold">{review.rating.toFixed(1)} / 5.0 Rating</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -274,26 +275,26 @@ export const ReviewDetails: React.FC = () => {
             </div>
 
             {/* Social Share Callout */}
-            <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-3xl p-6 text-white space-y-4 shadow-lg shadow-red-100/40">
-              <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
+            <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 text-white space-y-4 shadow-xl">
+              <div className="h-10 w-10 rounded-xl bg-red-600/20 text-red-500 flex items-center justify-center border border-red-500/20">
                 <Share2 size={20} />
               </div>
               <div className="space-y-1">
-                <h4 className="font-extrabold text-base">Spread the Deliciousness</h4>
-                <p className="text-xs text-red-50/80 leading-relaxed">
-                  Share this expert food review on Facebook, WhatsApp, or Messenger with your food buddy list!
+                <h4 className="font-extrabold text-base text-white">Spread the Deliciousness</h4>
+                <p className="text-xs text-neutral-400 leading-relaxed">
+                  Share this expert food review on Facebook or WhatsApp with your food buddy list!
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs font-extrabold text-center">
                 <button 
                   onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
-                  className="bg-white/20 hover:bg-white/30 py-2 rounded-xl transition"
+                  className="bg-neutral-800 hover:bg-neutral-700/80 border border-neutral-700/60 text-neutral-200 py-2.5 rounded-xl transition cursor-pointer"
                 >
                   Facebook
                 </button>
                 <button 
                   onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent('Check out this food review: ' + window.location.href)}`, '_blank')}
-                  className="bg-white/20 hover:bg-white/30 py-2 rounded-xl transition"
+                  className="bg-neutral-800 hover:bg-neutral-700/80 border border-neutral-700/60 text-neutral-200 py-2.5 rounded-xl transition cursor-pointer"
                 >
                   WhatsApp
                 </button>

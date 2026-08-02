@@ -771,7 +771,7 @@ export const AdminDashboard: React.FC = () => {
                       required
                       placeholder="https://images.unsplash.com/photo-..."
                       value={bannerForm.imageUrl}
-                      onChange={(e) => setBannerForm.setImageUrl(e.target.value)}
+                      onChange={(e) => setBannerForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
                       className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
                     />
                   </div>
@@ -784,7 +784,7 @@ export const AdminDashboard: React.FC = () => {
                         required
                         placeholder="e.g. Sultan's Dine Legendary Mutton Kacchi"
                         value={bannerForm.title}
-                        onChange={(e) => setBannerForm.setTitle(e.target.value)}
+                        onChange={(e) => setBannerForm((prev) => ({ ...prev, title: e.target.value }))}
                         className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
                       />
                     </div>
@@ -794,7 +794,7 @@ export const AdminDashboard: React.FC = () => {
                         type="url"
                         placeholder="https://youtube.com/... or Facebook link"
                         value={bannerForm.linkUrl}
-                        onChange={(e) => setBannerForm.setLinkUrl(e.target.value)}
+                        onChange={(e) => setBannerForm((prev) => ({ ...prev, linkUrl: e.target.value }))}
                         className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
                       />
                     </div>
@@ -807,7 +807,7 @@ export const AdminDashboard: React.FC = () => {
                       required
                       min="1"
                       value={bannerForm.order}
-                      onChange={(e) => setBannerForm.setOrder(Number(e.target.value))}
+                      onChange={(e) => setBannerForm((prev) => ({ ...prev, order: Number(e.target.value) }))}
                       className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
                     />
                   </div>

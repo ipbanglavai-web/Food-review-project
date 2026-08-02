@@ -61,12 +61,12 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [loading, setLoading] = useState(true);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [offers, setOffers] = useState<Offer[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [settings, setSettings] = useState<AppSettings>({ siteName: 'Food Review Bangladesh', description: '' });
-  const [moderators, setModerators] = useState<Moderator[]>([]);
+  const [reviews, setReviews] = useState<Review[]>(() => getReviews());
+  const [offers, setOffers] = useState<Offer[]>(() => getOffers());
+  const [categories, setCategories] = useState<Category[]>(() => getCategories());
+  const [banners, setBanners] = useState<Banner[]>(() => getBanners());
+  const [settings, setSettings] = useState<AppSettings>(() => getSettings());
+  const [moderators, setModerators] = useState<Moderator[]>(() => getModerators());
   const [currentUser, setCurrentUser] = useState<Moderator | null>(null);
 
   // Load state on mount

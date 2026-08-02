@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { Navbar } from './components/Navbar';
@@ -9,6 +9,17 @@ import { Login } from './pages/Login';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
+
+// ScrollToTop helper component to reset window scroll position on route change
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  }, [pathname]);
+
+  return null;
+};
 
 // Layout wrapper that conditionally shows Navbar and Footer
 const AppLayout: React.FC = () => {
@@ -28,6 +39,7 @@ const AppLayout: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <ScrollToTop />
       {/* Show navigation except on admin views */}
       {!isAdminPage && !isLoginPage && (
         <Navbar 

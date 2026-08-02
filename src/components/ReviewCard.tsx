@@ -20,14 +20,8 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ review, onLikeChanged })
   };
 
   const handleThumbnailClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Avoid triggering details navigation
-    const targetLink = review.thumbnailClickLink || review.videoUrl || review.facebookUrl || review.youtubeUrl;
-    if (targetLink) {
-      window.open(targetLink, '_blank', 'noopener,noreferrer');
-    } else {
-      // Default fallback
-      navigate(`/review/${review.id}`);
-    }
+    e.stopPropagation();
+    navigate(`/review/${review.id}`);
   };
 
   const handleLike = async (e: React.MouseEvent) => {
@@ -118,8 +112,8 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ review, onLikeChanged })
         </div>
 
         {/* Rating Badge */}
-        <div className="absolute top-3 right-3 flex items-center gap-1 bg-yellow-400 text-black text-xs font-black px-2.5 py-1 rounded-md shadow-sm">
-          <Star size={12} fill="black" />
+        <div className="absolute top-3 right-3 flex items-center gap-1 bg-neutral-900/85 backdrop-blur-md text-white text-xs font-extrabold px-2.5 py-1 rounded-lg border border-white/10 shadow-md">
+          <Star size={12} fill="#f59e0b" className="text-amber-400" />
           {review.rating.toFixed(1)}
         </div>
       </div>
