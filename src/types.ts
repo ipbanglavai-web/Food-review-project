@@ -67,4 +67,11 @@ export interface AppSettings {
   mobileLogo?: string;
   siteName: string;
   description: string;
+  contactAddress?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  facebookUrl?: string;
+  youtubeUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
 }

@@ -86,7 +86,7 @@ export const Login: React.FC = () => {
                   placeholder="admin@admin.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-neutral-200 rounded-xl text-sm placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-neutral-50"
+                  className="block w-full pl-10 pr-3 py-2.5 bg-white text-neutral-900 border border-neutral-200 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all shadow-2xs"
                 />
               </div>
             </div>
@@ -108,7 +108,7 @@ export const Login: React.FC = () => {
                   placeholder="admin"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-neutral-200 rounded-xl text-sm placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-neutral-50"
+                  className="block w-full pl-10 pr-3 py-2.5 bg-white text-neutral-900 border border-neutral-200 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all shadow-2xs"
                 />
               </div>
             </div>

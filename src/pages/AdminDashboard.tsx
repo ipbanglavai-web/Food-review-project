@@ -23,7 +23,9 @@ import {
   Heart,
   UploadCloud,
   ChevronRight,
-  Info
+  Info,
+  Mail,
+  Phone
 } from 'lucide-react';
 import { Review, Offer, Moderator, Category, Banner, AppSettings } from '../types';
 
@@ -64,8 +66,10 @@ export const AdminDashboard: React.FC = () => {
   }, [currentUser, navigate]);
 
   // UI state
-  const [activeTab, setActiveTab] = useState<'summary' | 'logo' | 'banners' | 'moderators' | 'reviews' | 'offers' | 'categories'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'logo' | 'contact' | 'banners' | 'moderators' | 'reviews' | 'offers' | 'categories'>('summary');
   const [darkMode, setDarkMode] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [actionStatus, setActionStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Forms editing state
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -75,6 +79,35 @@ export const AdminDashboard: React.FC = () => {
   const [desktopLogoInput, setDesktopLogoInput] = useState(settings.desktopLogo || '');
   const [mobileLogoInput, setMobileLogoInput] = useState(settings.mobileLogo || '');
   const [logoSaveSuccess, setLogoSaveSuccess] = useState(false);
+
+  // CONTACT MANAGEMENT STATE
+  const [contactForm, setContactForm] = useState({
+    contactAddress: settings.contactAddress || 'Road 11, Banani Commercial Area, Dhaka - 1213, Bangladesh',
+    contactEmail: settings.contactEmail || 'support@foodreviewbd.com',
+    contactPhone: settings.contactPhone || '+880 1712-345678',
+    description: settings.description || 'The premier platform for authentic food reviews, trusted culinary suggestions, and exclusive restaurant discounts across Bangladesh.',
+    facebookUrl: settings.facebookUrl || 'https://facebook.com',
+    youtubeUrl: settings.youtubeUrl || 'https://youtube.com',
+    instagramUrl: settings.instagramUrl || 'https://instagram.com',
+    twitterUrl: settings.twitterUrl || 'https://twitter.com'
+  });
+
+  useEffect(() => {
+    if (settings) {
+      setDesktopLogoInput(settings.desktopLogo || '');
+      setMobileLogoInput(settings.mobileLogo || '');
+      setContactForm({
+        contactAddress: settings.contactAddress || 'Road 11, Banani Commercial Area, Dhaka - 1213, Bangladesh',
+        contactEmail: settings.contactEmail || 'support@foodreviewbd.com',
+        contactPhone: settings.contactPhone || '+880 1712-345678',
+        description: settings.description || 'The premier platform for authentic food reviews, trusted culinary suggestions, and exclusive restaurant discounts across Bangladesh.',
+        facebookUrl: settings.facebookUrl || 'https://facebook.com',
+        youtubeUrl: settings.youtubeUrl || 'https://youtube.com',
+        instagramUrl: settings.instagramUrl || 'https://instagram.com',
+        twitterUrl: settings.twitterUrl || 'https://twitter.com'
+      });
+    }
+  }, [settings]);
 
   // REVIEW FORM STATE
   const [reviewForm, setReviewForm] = useState({
@@ -152,74 +185,134 @@ export const AdminDashboard: React.FC = () => {
   // Drag and Drop Logo Simulation
   const handleLogoSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    await saveSettings({
-      desktopLogo: desktopLogoInput,
-      mobileLogo: mobileLogoInput
-    });
-    setLogoSaveSuccess(true);
-    setTimeout(() => setLogoSaveSuccess(false), 2000);
+    try {
+      setIsSubmitting(true);
+      await saveSettings({
+        desktopLogo: desktopLogoInput,
+        mobileLogo: mobileLogoInput
+      });
+      setLogoSaveSuccess(true);
+      setActionStatus({ type: 'success', message: 'Logo settings saved to Firestore successfully!' });
+      setTimeout(() => {
+        setLogoSaveSuccess(false);
+        setActionStatus(null);
+      }, 3000);
+    } catch (err: any) {
+      console.error(err);
+      setActionStatus({ type: 'error', message: 'Failed to save logo settings to Firestore.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleContactSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setIsSubmitting(true);
+      await saveSettings({
+        contactAddress: contactForm.contactAddress,
+        contactEmail: contactForm.contactEmail,
+        contactPhone: contactForm.contactPhone,
+        description: contactForm.description,
+        facebookUrl: contactForm.facebookUrl,
+        youtubeUrl: contactForm.youtubeUrl,
+        instagramUrl: contactForm.instagramUrl,
+        twitterUrl: contactForm.twitterUrl
+      });
+      setActionStatus({ type: 'success', message: 'Contact details saved to Firestore successfully!' });
+      setTimeout(() => {
+        setActionStatus(null);
+      }, 3000);
+    } catch (err: any) {
+      console.error(err);
+      setActionStatus({ type: 'error', message: 'Failed to save contact details to Firestore.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Form submit handlers
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanTags = reviewForm.tags.split(',').map(t => t.trim()).filter(Boolean);
-    const reviewData = {
-      restaurantName: reviewForm.restaurantName,
-      foodCategory: reviewForm.foodCategory || categories.find(c => c.type === 'food')?.name || 'Best Biriyani',
-      rating: Number(reviewForm.rating),
-      thumbnail: reviewForm.thumbnail || 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?q=80&w=600&fit=crop',
-      thumbnailClickLink: reviewForm.thumbnailClickLink,
-      description: reviewForm.description,
-      shortDescription: reviewForm.shortDescription,
-      location: reviewForm.location,
-      videoUrl: reviewForm.videoUrl,
-      facebookUrl: reviewForm.facebookUrl,
-      youtubeUrl: reviewForm.youtubeUrl,
-      tags: cleanTags,
-      featured: reviewForm.featured,
-      publishDate: new Date().toISOString(),
-      seoTitle: reviewForm.seoTitle,
-      seoDescription: reviewForm.seoDescription,
-      adminName: currentUser?.name || 'Administrator'
-    };
+    try {
+      setIsSubmitting(true);
+      const cleanTags = reviewForm.tags.split(',').map(t => t.trim()).filter(Boolean);
+      const reviewData = {
+        restaurantName: reviewForm.restaurantName,
+        foodCategory: reviewForm.foodCategory || categories.find(c => c.type === 'food')?.name || 'Best Biriyani',
+        rating: Number(reviewForm.rating),
+        thumbnail: reviewForm.thumbnail || 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?q=80&w=600&fit=crop',
+        thumbnailClickLink: reviewForm.thumbnailClickLink,
+        description: reviewForm.description,
+        shortDescription: reviewForm.shortDescription,
+        location: reviewForm.location,
+        videoUrl: reviewForm.videoUrl,
+        facebookUrl: reviewForm.facebookUrl,
+        youtubeUrl: reviewForm.youtubeUrl,
+        tags: cleanTags,
+        featured: reviewForm.featured,
+        publishDate: new Date().toISOString(),
+        seoTitle: reviewForm.seoTitle,
+        seoDescription: reviewForm.seoDescription,
+        adminName: currentUser?.name || 'Administrator'
+      };
 
-    if (editingItem) {
-      await updateReview({
-        ...editingItem,
-        ...reviewData
-      });
-    } else {
-      await addReview(reviewData);
+      if (editingItem) {
+        await updateReview({
+          ...editingItem,
+          ...reviewData
+        });
+        setActionStatus({ type: 'success', message: 'Review updated in Firestore successfully!' });
+      } else {
+        await addReview(reviewData);
+        setActionStatus({ type: 'success', message: 'New review published to Firestore successfully!' });
+      }
+      setTimeout(() => setActionStatus(null), 3500);
+      resetForms();
+    } catch (err: any) {
+      console.error(err);
+      setActionStatus({ type: 'error', message: 'Failed to save review to Firestore. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
     }
-    resetForms();
   };
 
   const handleOfferSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const offerData = {
-      restaurantName: offerForm.restaurantName,
-      thumbnail: offerForm.thumbnail || 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600&fit=crop',
-      caption: offerForm.caption,
-      couponCode: offerForm.couponCode,
-      shortDescription: offerForm.shortDescription,
-      discountPercentage: Number(offerForm.discountPercentage),
-      expiryDate: offerForm.expiryDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      category: offerForm.category || categories.find(c => c.type === 'food')?.name || 'Best Biriyani',
-      featured: offerForm.featured,
-      status: offerForm.status,
-      adminName: currentUser?.name || 'Administrator'
-    };
+    try {
+      setIsSubmitting(true);
+      const offerData = {
+        restaurantName: offerForm.restaurantName,
+        thumbnail: offerForm.thumbnail || 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600&fit=crop',
+        caption: offerForm.caption,
+        couponCode: offerForm.couponCode,
+        shortDescription: offerForm.shortDescription,
+        discountPercentage: Number(offerForm.discountPercentage),
+        expiryDate: offerForm.expiryDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        category: offerForm.category || categories.find(c => c.type === 'food')?.name || 'Best Biriyani',
+        featured: offerForm.featured,
+        status: offerForm.status,
+        adminName: currentUser?.name || 'Administrator'
+      };
 
-    if (editingItem) {
-      await updateOffer({
-        ...editingItem,
-        ...offerData
-      });
-    } else {
-      await addOffer(offerData);
+      if (editingItem) {
+        await updateOffer({
+          ...editingItem,
+          ...offerData
+        });
+        setActionStatus({ type: 'success', message: 'Offer updated in Firestore successfully!' });
+      } else {
+        await addOffer(offerData);
+        setActionStatus({ type: 'success', message: 'New coupon offer published to Firestore successfully!' });
+      }
+      setTimeout(() => setActionStatus(null), 3500);
+      resetForms();
+    } catch (err: any) {
+      console.error(err);
+      setActionStatus({ type: 'error', message: 'Failed to save coupon offer to Firestore.' });
+    } finally {
+      setIsSubmitting(false);
     }
-    resetForms();
   };
 
   const handleModeratorSubmit = async (e: React.FormEvent) => {
@@ -229,51 +322,83 @@ export const AdminDashboard: React.FC = () => {
       return;
     }
 
-    const modData = {
-      name: moderatorForm.name,
-      phone: moderatorForm.phone,
-      email: moderatorForm.email,
-      nid: moderatorForm.nid,
-      password: moderatorForm.password,
-      role: moderatorForm.role,
-      status: moderatorForm.status
-    };
+    try {
+      setIsSubmitting(true);
+      const modData = {
+        name: moderatorForm.name,
+        phone: moderatorForm.phone,
+        email: moderatorForm.email,
+        nid: moderatorForm.nid,
+        password: moderatorForm.password,
+        role: moderatorForm.role,
+        status: moderatorForm.status
+      };
 
-    if (editingItem) {
-      await updateModerator({
-        ...editingItem,
-        ...modData
-      });
-    } else {
-      await addModerator(modData);
+      if (editingItem) {
+        await updateModerator({
+          ...editingItem,
+          ...modData
+        });
+        setActionStatus({ type: 'success', message: 'Moderator profile updated in Firestore successfully!' });
+      } else {
+        await addModerator(modData);
+        setActionStatus({ type: 'success', message: 'New moderator registered to Firestore successfully!' });
+      }
+      setTimeout(() => setActionStatus(null), 3500);
+      resetForms();
+    } catch (err: any) {
+      console.error(err);
+      setActionStatus({ type: 'error', message: 'Failed to save moderator data to Firestore.' });
+    } finally {
+      setIsSubmitting(false);
     }
-    resetForms();
   };
 
   const handleCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addCategory(categoryForm.name, categoryForm.type);
-    resetForms();
+    try {
+      setIsSubmitting(true);
+      await addCategory(categoryForm.name, categoryForm.type);
+      setActionStatus({ type: 'success', message: 'Category added to Firestore successfully!' });
+      setTimeout(() => setActionStatus(null), 3500);
+      resetForms();
+    } catch (err: any) {
+      console.error(err);
+      setActionStatus({ type: 'error', message: 'Failed to add category to Firestore.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleBannerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const bData = {
-      imageUrl: bannerForm.imageUrl || 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?q=80&w=1600&h=900&fit=crop',
-      linkUrl: bannerForm.linkUrl,
-      title: bannerForm.title,
-      order: Number(bannerForm.order)
-    };
+    try {
+      setIsSubmitting(true);
+      const bData = {
+        imageUrl: bannerForm.imageUrl || 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?q=80&w=1600&h=900&fit=crop',
+        linkUrl: bannerForm.linkUrl,
+        title: bannerForm.title,
+        order: Number(bannerForm.order)
+      };
 
-    if (editingItem) {
-      await updateBanner({
-        ...editingItem,
-        ...bData
-      });
-    } else {
-      await addBanner(bData);
+      if (editingItem) {
+        await updateBanner({
+          ...editingItem,
+          ...bData
+        });
+        setActionStatus({ type: 'success', message: 'Banner slide updated in Firestore successfully!' });
+      } else {
+        await addBanner(bData);
+        setActionStatus({ type: 'success', message: 'Banner slide added to Firestore successfully!' });
+      }
+      setTimeout(() => setActionStatus(null), 3500);
+      resetForms();
+    } catch (err: any) {
+      console.error(err);
+      setActionStatus({ type: 'error', message: 'Failed to save banner slide to Firestore.' });
+    } finally {
+      setIsSubmitting(false);
     }
-    resetForms();
   };
 
   const resetForms = () => {
@@ -399,7 +524,7 @@ export const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen flex ${darkMode ? 'bg-zinc-950 text-zinc-100' : 'bg-neutral-50 text-neutral-800'}`}>
+    <div className={`min-h-screen flex ${darkMode ? 'dark bg-zinc-950 text-zinc-100' : 'bg-neutral-50 text-neutral-800'}`}>
       
       {/* SIDEBAR NAVIGATION */}
       <aside className={`w-64 shrink-0 border-r ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-neutral-100'} hidden md:flex flex-col justify-between p-6`}>
@@ -442,6 +567,18 @@ export const AdminDashboard: React.FC = () => {
             >
               <SettingsIcon size={16} />
               Logo Manager
+            </button>
+
+            <button
+              onClick={() => { setActiveTab('contact'); resetForms(); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
+                activeTab === 'contact' 
+                  ? 'bg-red-600 text-white' 
+                  : 'text-neutral-500 hover:text-red-600'
+              }`}
+            >
+              <Info size={16} />
+              About Us & Contact
             </button>
 
             <button
@@ -565,6 +702,20 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Global Action Status Alert Banner */}
+        {actionStatus && (
+          <div className={`mb-6 p-4 rounded-2xl text-xs font-bold flex items-center justify-between border ${
+            actionStatus.type === 'success' 
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' 
+              : 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400'
+          }`}>
+            <span>{actionStatus.message}</span>
+            <button onClick={() => setActionStatus(null)} className="text-xs uppercase underline cursor-pointer ml-4">
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* SECTION 1: SUMMARY STATISTICS */}
         {activeTab === 'summary' && (
           <div className="space-y-10">
@@ -667,28 +818,28 @@ export const AdminDashboard: React.FC = () => {
 
               <form onSubmit={handleLogoSave} className="space-y-6">
                 <div>
-                  <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Desktop Site Logo (Image URL)</label>
+                  <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">Desktop Site Logo (Image URL)</label>
                   <input
                     type="url"
                     placeholder="https://images.unsplash.com/photo-... or leave empty for default font logo"
                     value={desktopLogoInput}
                     onChange={(e) => setDesktopLogoInput(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                   />
-                  <div className="mt-3 p-3 bg-neutral-50 dark:bg-zinc-800/50 rounded-xl border border-neutral-100 dark:border-zinc-800 text-[11px] text-neutral-400 flex items-center gap-1.5">
+                  <div className="mt-3 p-3 bg-neutral-50 dark:bg-zinc-800/50 rounded-xl border border-neutral-200/60 dark:border-zinc-800 text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
                     <Info size={14} className="shrink-0 text-red-500" />
                     <span>Provide direct cover image links to replace the default brand logos across the header.</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Mobile Site Logo (Image URL)</label>
+                  <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">Mobile Site Logo (Image URL)</label>
                   <input
                     type="url"
                     placeholder="https://images.unsplash.com/photo-... or leave empty for default"
                     value={mobileLogoInput}
                     onChange={(e) => setMobileLogoInput(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                   />
                 </div>
 
@@ -734,6 +885,157 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+        {/* SECTION: CONTACT MANAGEMENT */}
+        {activeTab === 'contact' && (
+          <div className="space-y-6 max-w-4xl">
+            <div className={`p-6 sm:p-8 rounded-3xl border ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-neutral-100'} shadow-sm space-y-6`}>
+              <div className={`flex items-center justify-between pb-4 border-b ${darkMode ? 'border-zinc-800' : 'border-neutral-100'}`}>
+                <div>
+                  <h2 className={`text-xl font-black font-sans ${darkMode ? 'text-zinc-100' : 'text-neutral-900'}`}>About Us & Contact Details</h2>
+                  <p className={`text-xs ${darkMode ? 'text-zinc-400' : 'text-neutral-500'} mt-1`}>Manage "About Us" platform bio, office location, helpline, email, and social handles rendered across the site footer and Contact page.</p>
+                </div>
+                <div className={`h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 ${darkMode ? 'bg-red-950/40 text-red-500' : 'bg-red-50 text-red-600'}`}>
+                  <Info size={20} />
+                </div>
+              </div>
+
+              <form onSubmit={handleContactSave} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${darkMode ? 'text-zinc-400' : 'text-neutral-600'}`}>
+                      Office / Headquarters Address
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={contactForm.contactAddress}
+                      onChange={(e) => setContactForm({ ...contactForm, contactAddress: e.target.value })}
+                      className={`w-full px-4 py-2.5 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs ${
+                        darkMode ? 'bg-zinc-800 text-zinc-100 border border-zinc-700' : 'bg-white text-neutral-900 border border-neutral-200'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${darkMode ? 'text-zinc-400' : 'text-neutral-600'}`}>
+                      Support Email Address
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={contactForm.contactEmail}
+                      onChange={(e) => setContactForm({ ...contactForm, contactEmail: e.target.value })}
+                      className={`w-full px-4 py-2.5 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs ${
+                        darkMode ? 'bg-zinc-800 text-zinc-100 border border-zinc-700' : 'bg-white text-neutral-900 border border-neutral-200'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${darkMode ? 'text-zinc-400' : 'text-neutral-600'}`}>
+                      Official Helpline / Phone Number
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={contactForm.contactPhone}
+                      onChange={(e) => setContactForm({ ...contactForm, contactPhone: e.target.value })}
+                      className={`w-full px-4 py-2.5 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs ${
+                        darkMode ? 'bg-zinc-800 text-zinc-100 border border-zinc-700' : 'bg-white text-neutral-900 border border-neutral-200'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${darkMode ? 'text-zinc-400' : 'text-neutral-600'}`}>
+                      Facebook Page URL
+                    </label>
+                    <input
+                      type="url"
+                      value={contactForm.facebookUrl}
+                      onChange={(e) => setContactForm({ ...contactForm, facebookUrl: e.target.value })}
+                      className={`w-full px-4 py-2.5 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs ${
+                        darkMode ? 'bg-zinc-800 text-zinc-100 border border-zinc-700' : 'bg-white text-neutral-900 border border-neutral-200'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${darkMode ? 'text-zinc-400' : 'text-neutral-600'}`}>
+                      YouTube Channel URL
+                    </label>
+                    <input
+                      type="url"
+                      value={contactForm.youtubeUrl}
+                      onChange={(e) => setContactForm({ ...contactForm, youtubeUrl: e.target.value })}
+                      className={`w-full px-4 py-2.5 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs ${
+                        darkMode ? 'bg-zinc-800 text-zinc-100 border border-zinc-700' : 'bg-white text-neutral-900 border border-neutral-200'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${darkMode ? 'text-zinc-400' : 'text-neutral-600'}`}>
+                      Instagram Page URL
+                    </label>
+                    <input
+                      type="url"
+                      value={contactForm.instagramUrl}
+                      onChange={(e) => setContactForm({ ...contactForm, instagramUrl: e.target.value })}
+                      className={`w-full px-4 py-2.5 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs ${
+                        darkMode ? 'bg-zinc-800 text-zinc-100 border border-zinc-700' : 'bg-white text-neutral-900 border border-neutral-200'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${darkMode ? 'text-zinc-400' : 'text-neutral-600'}`}>
+                      Twitter / X Handle URL
+                    </label>
+                    <input
+                      type="url"
+                      value={contactForm.twitterUrl}
+                      onChange={(e) => setContactForm({ ...contactForm, twitterUrl: e.target.value })}
+                      className={`w-full px-4 py-2.5 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs ${
+                        darkMode ? 'bg-zinc-800 text-zinc-100 border border-zinc-700' : 'bg-white text-neutral-900 border border-neutral-200'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${darkMode ? 'text-zinc-400' : 'text-neutral-600'}`}>
+                    Footer About / Platform Bio
+                  </label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={contactForm.description}
+                    onChange={(e) => setContactForm({ ...contactForm, description: e.target.value })}
+                    className={`w-full px-4 py-2.5 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs ${
+                      darkMode ? 'bg-zinc-800 text-zinc-100 border border-zinc-700' : 'bg-white text-neutral-900 border border-neutral-200'
+                    }`}
+                  />
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-6 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer shadow-md shadow-red-200 dark:shadow-none"
+                  >
+                    {isSubmitting ? 'Saving to Firestore...' : 'Save Contact Info'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* SECTION 3: BANNER MANAGEMENT */}
         {activeTab === 'banners' && (
           <div className="space-y-8">
@@ -765,50 +1067,50 @@ export const AdminDashboard: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Banner Image URL</label>
+                    <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">Banner Image URL</label>
                     <input
                       type="url"
                       required
                       placeholder="https://images.unsplash.com/photo-..."
                       value={bannerForm.imageUrl}
                       onChange={(e) => setBannerForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
-                      className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Slide Title / Slogan</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">Slide Title / Slogan</label>
                       <input
                         type="text"
                         required
                         placeholder="e.g. Sultan's Dine Legendary Mutton Kacchi"
                         value={bannerForm.title}
                         onChange={(e) => setBannerForm((prev) => ({ ...prev, title: e.target.value }))}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Slide Redirect URL</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">Slide Redirect URL</label>
                       <input
                         type="url"
                         placeholder="https://youtube.com/... or Facebook link"
                         value={bannerForm.linkUrl}
                         onChange={(e) => setBannerForm((prev) => ({ ...prev, linkUrl: e.target.value }))}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Display Order (Order index)</label>
+                    <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">Display Order (Order index)</label>
                     <input
                       type="number"
                       required
                       min="1"
                       value={bannerForm.order}
                       onChange={(e) => setBannerForm((prev) => ({ ...prev, order: Number(e.target.value) }))}
-                      className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                     />
                   </div>
 
@@ -882,25 +1184,25 @@ export const AdminDashboard: React.FC = () => {
                 <form onSubmit={handleReviewSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Restaurant Name</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Restaurant Name</label>
                       <input
                         type="text"
                         required
                         placeholder="Sultan's Dine"
                         value={reviewForm.restaurantName}
                         onChange={(e) => setReviewForm({ ...reviewForm, restaurantName: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Food Category</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Food Category</label>
                       <select
                         value={reviewForm.foodCategory}
                         onChange={(e) => setReviewForm({ ...reviewForm, foodCategory: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       >
                         {categories.filter(c => c.type === 'food').map(c => (
-                          <option key={c.id} value={c.name}>{c.name}</option>
+                          <option key={c.id} value={c.name} className="bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100">{c.name}</option>
                         ))}
                       </select>
                     </div>
@@ -908,30 +1210,30 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Thumbnail (Image URL)</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Thumbnail (Image URL)</label>
                       <input
                         type="url"
                         placeholder="https://images.unsplash.com/photo-..."
                         value={reviewForm.thumbnail}
                         onChange={(e) => setReviewForm({ ...reviewForm, thumbnail: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Thumbnail Click Direct Link (Video / Facebook / YouTube URL)</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Thumbnail Click Direct Link (Video / Facebook / YouTube URL)</label>
                       <input
                         type="url"
                         placeholder="https://facebook.com/watch/?v=..."
                         value={reviewForm.thumbnailClickLink}
                         onChange={(e) => setReviewForm({ ...reviewForm, thumbnailClickLink: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Rating Star score (1-5)</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Rating Star score (1-5)</label>
                       <input
                         type="number"
                         step="0.1"
@@ -940,104 +1242,104 @@ export const AdminDashboard: React.FC = () => {
                         required
                         value={reviewForm.rating}
                         onChange={(e) => setReviewForm({ ...reviewForm, rating: Number(e.target.value) })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Restaurant Location</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Restaurant Location</label>
                       <input
                         type="text"
                         required
                         placeholder="Dhanmondi, Dhaka"
                         value={reviewForm.location}
                         onChange={(e) => setReviewForm({ ...reviewForm, location: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Tags (Comma-separated)</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Tags (Comma-separated)</label>
                       <input
                         type="text"
                         placeholder="Kacchi, Mutton, Dhanmondi"
                         value={reviewForm.tags}
                         onChange={(e) => setReviewForm({ ...reviewForm, tags: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Video Broadcast URL</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Video Broadcast URL</label>
                       <input
                         type="url"
                         placeholder="https://youtube.com/watch?..."
                         value={reviewForm.videoUrl}
                         onChange={(e) => setReviewForm({ ...reviewForm, videoUrl: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Facebook Post URL</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Facebook Post URL</label>
                       <input
                         type="url"
                         value={reviewForm.facebookUrl}
                         onChange={(e) => setReviewForm({ ...reviewForm, facebookUrl: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">YouTube Video URL</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">YouTube Video URL</label>
                       <input
                         type="url"
                         value={reviewForm.youtubeUrl}
                         onChange={(e) => setReviewForm({ ...reviewForm, youtubeUrl: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">SEO Meta Title</label>
+                    <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">SEO Meta Title</label>
                     <input
                       type="text"
                       placeholder="Sultan's Dine Dhanmondi Review - Food Review BD"
                       value={reviewForm.seoTitle}
                       onChange={(e) => setReviewForm({ ...reviewForm, seoTitle: e.target.value })}
-                      className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">SEO Meta Description</label>
+                    <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">SEO Meta Description</label>
                     <textarea
                       placeholder="An in depth breakdown rating mutton, rice, service and price details..."
                       value={reviewForm.seoDescription}
                       onChange={(e) => setReviewForm({ ...reviewForm, seoDescription: e.target.value })}
-                      className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm h-16"
+                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs h-16"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Short Description Hook</label>
+                    <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Short Description Hook</label>
                     <input
                       type="text"
                       required
                       placeholder="The absolute gold standard mutton biriyani in Dhaka with robust flavors."
                       value={reviewForm.shortDescription}
                       onChange={(e) => setReviewForm({ ...reviewForm, shortDescription: e.target.value })}
-                      className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Detailed Culinary Description (HTML Supported)</label>
+                    <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Detailed Culinary Description (HTML Supported)</label>
                     <textarea
                       required
                       placeholder="<p>Sultan's Dine sets standard...</p>"
                       value={reviewForm.description}
                       onChange={(e) => setReviewForm({ ...reviewForm, description: e.target.value })}
-                      className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm h-36 font-mono"
+                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs h-36 font-mono"
                     />
                   </div>
 
@@ -1132,25 +1434,25 @@ export const AdminDashboard: React.FC = () => {
                 <form onSubmit={handleOfferSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Restaurant Name</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Restaurant Name</label>
                       <input
                         type="text"
                         required
                         placeholder="Chillox"
                         value={offerForm.restaurantName}
                         onChange={(e) => setOfferForm({ ...offerForm, restaurantName: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Category</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Category</label>
                       <select
                         value={offerForm.category}
                         onChange={(e) => setOfferForm({ ...offerForm, category: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       >
                         {categories.filter(c => c.type === 'food').map(c => (
-                          <option key={c.id} value={c.name}>{c.name}</option>
+                          <option key={c.id} value={c.name} className="bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100">{c.name}</option>
                         ))}
                       </select>
                     </div>
@@ -1158,31 +1460,31 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Offer Thumbnail (Image URL)</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Offer Thumbnail (Image URL)</label>
                       <input
                         type="url"
                         placeholder="https://images.unsplash.com/photo-..."
                         value={offerForm.thumbnail}
                         onChange={(e) => setOfferForm({ ...offerForm, thumbnail: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Coupon code</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Coupon code</label>
                       <input
                         type="text"
                         required
                         placeholder="CHILLBOGO"
                         value={offerForm.couponCode}
                         onChange={(e) => setOfferForm({ ...offerForm, couponCode: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Discount percentage (%)</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Discount percentage (%)</label>
                       <input
                         type="number"
                         required
@@ -1190,52 +1492,52 @@ export const AdminDashboard: React.FC = () => {
                         max="100"
                         value={offerForm.discountPercentage}
                         onChange={(e) => setOfferForm({ ...offerForm, discountPercentage: Number(e.target.value) })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Expiry Date</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Expiry Date</label>
                       <input
                         type="date"
                         required
                         value={offerForm.expiryDate}
                         onChange={(e) => setOfferForm({ ...offerForm, expiryDate: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Offer Status</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Offer Status</label>
                       <select
                         value={offerForm.status}
                         onChange={(e) => setOfferForm({ ...offerForm, status: e.target.value as any })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
+                        <option value="active" className="bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100">Active</option>
+                        <option value="inactive" className="bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100">Inactive</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Offer Caption / Tagline</label>
+                    <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Offer Caption / Tagline</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. Get Flat 15% Off on Kacchi Platters!"
                       value={offerForm.caption}
                       onChange={(e) => setOfferForm({ ...offerForm, caption: e.target.value })}
-                      className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Short Offer Description</label>
+                    <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Short Offer Description</label>
                     <textarea
                       required
                       placeholder="Enjoy 15% discount on our mutton platter, valid only on weekdays at any Dhanmondi branch..."
                       value={offerForm.shortDescription}
                       onChange={(e) => setOfferForm({ ...offerForm, shortDescription: e.target.value })}
-                      className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm h-24"
+                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs h-24"
                     />
                   </div>
 
@@ -1318,26 +1620,26 @@ export const AdminDashboard: React.FC = () => {
               
               <form onSubmit={handleCategorySubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Category Title Name</label>
+                  <label className="block text-xs font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">Category Title Name</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Seafood, Street Food, Burger"
                     value={categoryForm.name}
                     onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Classification Type</label>
+                  <label className="block text-xs font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">Classification Type</label>
                   <select
                     value={categoryForm.type}
                     onChange={(e) => setCategoryForm({ ...categoryForm, type: e.target.value as any })}
-                    className="w-full px-4 py-2.5 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                   >
-                    <option value="food">Food Cuisine Category</option>
-                    <option value="restaurant">Restaurant Category</option>
+                    <option value="food" className="bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100">Food Cuisine Category</option>
+                    <option value="restaurant" className="bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100">Restaurant Category</option>
                   </select>
                 </div>
 
@@ -1402,101 +1704,101 @@ export const AdminDashboard: React.FC = () => {
                 <form onSubmit={handleModeratorSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Full Name</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Full Name</label>
                       <input
                         type="text"
                         required
                         placeholder="Nafis Kamal"
                         value={moderatorForm.name}
                         onChange={(e) => setModeratorForm({ ...moderatorForm, name: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Phone Number</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Phone Number</label>
                       <input
                         type="tel"
                         required
                         placeholder="01712-345678"
                         value={moderatorForm.phone}
                         onChange={(e) => setModeratorForm({ ...moderatorForm, phone: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Email Address</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Email Address</label>
                       <input
                         type="email"
                         required
                         placeholder="nafis@foodreview.com"
                         value={moderatorForm.email}
                         onChange={(e) => setModeratorForm({ ...moderatorForm, email: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">NID (National Identity Number)</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">NID (National Identity Number)</label>
                       <input
                         type="text"
                         required
                         placeholder="1995261234567"
                         value={moderatorForm.nid}
                         onChange={(e) => setModeratorForm({ ...moderatorForm, nid: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Password</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Password</label>
                       <input
                         type="password"
                         required={!editingItem}
                         placeholder="••••••••"
                         value={moderatorForm.password}
                         onChange={(e) => setModeratorForm({ ...moderatorForm, password: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Confirm Password</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Confirm Password</label>
                       <input
                         type="password"
                         required={!editingItem}
                         placeholder="••••••••"
                         value={moderatorForm.confirmPassword}
                         onChange={(e) => setModeratorForm({ ...moderatorForm, confirmPassword: e.target.value })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Role Designation</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Role Designation</label>
                       <select
                         value={moderatorForm.role}
                         onChange={(e) => setModeratorForm({ ...moderatorForm, role: e.target.value as any })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       >
-                        <option value="moderator">Moderator</option>
-                        <option value="admin">Admin</option>
+                        <option value="moderator" className="bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100">Moderator</option>
+                        <option value="admin" className="bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100">Admin</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-400 uppercase mb-1">Status</label>
+                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Status</label>
                       <select
                         value={moderatorForm.status}
                         onChange={(e) => setModeratorForm({ ...moderatorForm, status: e.target.value as any })}
-                        className="w-full px-4 py-2 border border-neutral-200 dark:border-zinc-700 bg-neutral-50 dark:bg-zinc-800 rounded-xl text-sm"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
                       >
-                        <option value="active">Active</option>
-                        <option value="suspended">Suspended</option>
-                        <option value="banned">Banned</option>
+                        <option value="active" className="bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100">Active</option>
+                        <option value="suspended" className="bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100">Suspended</option>
+                        <option value="banned" className="bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100">Banned</option>
                       </select>
                     </div>
                   </div>

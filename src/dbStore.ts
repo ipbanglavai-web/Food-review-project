@@ -263,7 +263,14 @@ const INITIAL_STATE: LocalState = {
     desktopLogo: "",
     mobileLogo: "",
     siteName: "Food Review Bangladesh",
-    description: "A premium restaurant reviews and discount offers platform in Bangladesh."
+    description: "The premier platform for authentic food reviews, trusted culinary suggestions, and exclusive restaurant discounts across Bangladesh. Handpicked and reviewed by food experts.",
+    contactAddress: "Road 11, Banani Commercial Area, Dhaka - 1213, Bangladesh",
+    contactEmail: "support@foodreviewbd.com",
+    contactPhone: "+880 1712-345678",
+    facebookUrl: "https://facebook.com",
+    youtubeUrl: "https://youtube.com",
+    instagramUrl: "https://instagram.com",
+    twitterUrl: "https://twitter.com"
   }
 };
 
@@ -462,14 +469,26 @@ export function isReviewLikedLocally(id: string): boolean {
   return localStorage.getItem(`liked_review_${id}`) === 'true';
 }
 
+// Helper function to sanitize objects before sending to Firestore (strips undefined values)
+function cleanData<T extends Record<string, any>>(data: T): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 // ADMIN CORE FUNCTIONS
 export async function saveAppSettings(settings: Partial<AppSettings>): Promise<AppSettings> {
   cachedState.settings = { ...cachedState.settings, ...settings };
   saveLocalCache();
   try {
-    await setDoc(doc(db, 'settings', 'app'), cachedState.settings);
+    await setDoc(doc(db, 'settings', 'app'), cleanData(cachedState.settings));
   } catch (e) {
-    console.warn("Could not save settings to firestore:", e);
+    console.error("Could not save settings to firestore:", e);
+    throw e;
   }
   return cachedState.settings;
 }
@@ -481,9 +500,10 @@ export async function addBanner(banner: Omit<Banner, 'id'>): Promise<Banner> {
   cachedState.banners.push(newBanner);
   saveLocalCache();
   try {
-    await setDoc(doc(db, 'banners', newId), newBanner);
+    await setDoc(doc(db, 'banners', newId), cleanData(newBanner));
   } catch (e) {
-    console.warn("Firestore error adding banner:", e);
+    console.error("Firestore error adding banner:", e);
+    throw e;
   }
   return newBanner;
 }
@@ -494,7 +514,8 @@ export async function deleteBanner(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'banners', id));
   } catch (e) {
-    console.warn("Firestore error deleting banner:", e);
+    console.error("Firestore error deleting banner:", e);
+    throw e;
   }
 }
 
@@ -505,9 +526,10 @@ export async function updateBanner(banner: Banner): Promise<Banner> {
     saveLocalCache();
   }
   try {
-    await setDoc(doc(db, 'banners', banner.id), banner);
+    await setDoc(doc(db, 'banners', banner.id), cleanData(banner));
   } catch (e) {
-    console.warn("Firestore error updating banner:", e);
+    console.error("Firestore error updating banner:", e);
+    throw e;
   }
   return banner;
 }
@@ -519,9 +541,10 @@ export async function addCategory(name: string, type: 'food' | 'restaurant'): Pr
   cachedState.categories.push(newCat);
   saveLocalCache();
   try {
-    await setDoc(doc(db, 'categories', cleanId), newCat);
+    await setDoc(doc(db, 'categories', cleanId), cleanData(newCat));
   } catch (e) {
-    console.warn("Firestore error adding category:", e);
+    console.error("Firestore error adding category:", e);
+    throw e;
   }
   return newCat;
 }
@@ -532,7 +555,8 @@ export async function deleteCategory(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'categories', id));
   } catch (e) {
-    console.warn("Firestore error deleting category:", e);
+    console.error("Firestore error deleting category:", e);
+    throw e;
   }
 }
 
@@ -543,9 +567,10 @@ export async function updateCategory(cat: Category): Promise<Category> {
     saveLocalCache();
   }
   try {
-    await setDoc(doc(db, 'categories', cat.id), cat);
+    await setDoc(doc(db, 'categories', cat.id), cleanData(cat));
   } catch (e) {
-    console.warn("Firestore error updating category:", e);
+    console.error("Firestore error updating category:", e);
+    throw e;
   }
   return cat;
 }
@@ -562,9 +587,10 @@ export async function addReview(review: Omit<Review, 'id' | 'views' | 'likes'>):
   cachedState.reviews.unshift(newReview);
   saveLocalCache();
   try {
-    await setDoc(doc(db, 'reviews', newId), newReview);
+    await setDoc(doc(db, 'reviews', newId), cleanData(newReview));
   } catch (e) {
-    console.warn("Firestore error adding review:", e);
+    console.error("Firestore error adding review:", e);
+    throw e;
   }
   return newReview;
 }
@@ -576,9 +602,10 @@ export async function updateReview(review: Review): Promise<Review> {
     saveLocalCache();
   }
   try {
-    await setDoc(doc(db, 'reviews', review.id), review);
+    await setDoc(doc(db, 'reviews', review.id), cleanData(review));
   } catch (e) {
-    console.warn("Firestore error updating review:", e);
+    console.error("Firestore error updating review:", e);
+    throw e;
   }
   return review;
 }
@@ -589,7 +616,8 @@ export async function deleteReview(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'reviews', id));
   } catch (e) {
-    console.warn("Firestore error deleting review:", e);
+    console.error("Firestore error deleting review:", e);
+    throw e;
   }
 }
 
@@ -600,9 +628,10 @@ export async function addOffer(offer: Omit<Offer, 'id'>): Promise<Offer> {
   cachedState.offers.unshift(newOffer);
   saveLocalCache();
   try {
-    await setDoc(doc(db, 'offers', newId), newOffer);
+    await setDoc(doc(db, 'offers', newId), cleanData(newOffer));
   } catch (e) {
-    console.warn("Firestore error adding offer:", e);
+    console.error("Firestore error adding offer:", e);
+    throw e;
   }
   return newOffer;
 }
@@ -614,9 +643,10 @@ export async function updateOffer(offer: Offer): Promise<Offer> {
     saveLocalCache();
   }
   try {
-    await setDoc(doc(db, 'offers', offer.id), offer);
+    await setDoc(doc(db, 'offers', offer.id), cleanData(offer));
   } catch (e) {
-    console.warn("Firestore error updating offer:", e);
+    console.error("Firestore error updating offer:", e);
+    throw e;
   }
   return offer;
 }
@@ -627,7 +657,8 @@ export async function deleteOffer(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'offers', id));
   } catch (e) {
-    console.warn("Firestore error deleting offer:", e);
+    console.error("Firestore error deleting offer:", e);
+    throw e;
   }
 }
 
@@ -638,9 +669,10 @@ export async function addModerator(mod: Omit<Moderator, 'id'>): Promise<Moderato
   cachedState.moderators.push(newMod);
   saveLocalCache();
   try {
-    await setDoc(doc(db, 'moderators', newId), newMod);
+    await setDoc(doc(db, 'moderators', newId), cleanData(newMod));
   } catch (e) {
-    console.warn("Firestore error adding moderator:", e);
+    console.error("Firestore error adding moderator:", e);
+    throw e;
   }
   return newMod;
 }
@@ -652,9 +684,10 @@ export async function updateModerator(mod: Moderator): Promise<Moderator> {
     saveLocalCache();
   }
   try {
-    await setDoc(doc(db, 'moderators', mod.id), mod);
+    await setDoc(doc(db, 'moderators', mod.id), cleanData(mod));
   } catch (e) {
-    console.warn("Firestore error updating moderator:", e);
+    console.error("Firestore error updating moderator:", e);
+    throw e;
   }
   return mod;
 }
@@ -665,6 +698,7 @@ export async function deleteModerator(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'moderators', id));
   } catch (e) {
-    console.warn("Firestore error deleting moderator:", e);
+    console.error("Firestore error deleting moderator:", e);
+    throw e;
   }
 }

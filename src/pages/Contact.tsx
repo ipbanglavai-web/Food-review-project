@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, Check } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 export const Contact: React.FC = () => {
+  const { settings } = useApp();
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
 
@@ -42,17 +44,17 @@ export const Contact: React.FC = () => {
               <div className="space-y-4 text-xs text-neutral-600">
                 <div className="flex items-start gap-2.5">
                   <MapPin size={16} className="text-red-500 mt-0.5 shrink-0" />
-                  <span>Road 11, Banani Commercial Area, Dhaka - 1213, Bangladesh</span>
+                  <span>{settings.contactAddress || "Road 11, Banani Commercial Area, Dhaka - 1213, Bangladesh"}</span>
                 </div>
 
                 <div className="flex items-center gap-2.5">
                   <Phone size={14} className="text-red-500 shrink-0" />
-                  <span>+880 1712-345678</span>
+                  <span>{settings.contactPhone || "+880 1712-345678"}</span>
                 </div>
 
                 <div className="flex items-center gap-2.5">
                   <Mail size={14} className="text-red-500 shrink-0" />
-                  <span>support@foodreviewbd.com</span>
+                  <span>{settings.contactEmail || "support@foodreviewbd.com"}</span>
                 </div>
               </div>
 

@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Youtube, Instagram, Twitter, MessageSquare, MapPin, Mail, Phone } from 'lucide-react';
+import { Facebook, Youtube, Instagram, Twitter, MapPin, Mail, Phone } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 export const Footer: React.FC = () => {
+  const { settings } = useApp();
+
   return (
     <footer className="bg-neutral-950 text-neutral-300 pt-16 pb-8 border-t border-neutral-900">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -19,19 +22,19 @@ export const Footer: React.FC = () => {
               </span>
             </div>
             <p className="text-sm leading-relaxed text-neutral-400">
-              The premier platform for authentic food reviews, trusted culinary suggestions, and exclusive restaurant discounts across Bangladesh. Handpicked and reviewed by food experts.
+              {settings.description || "The premier platform for authentic food reviews, trusted culinary suggestions, and exclusive restaurant discounts across Bangladesh. Handpicked and reviewed by food experts."}
             </p>
             <div className="flex space-x-4 pt-2">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors">
+              <a href={settings.facebookUrl || "https://facebook.com"} target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors">
                 <Facebook size={18} />
               </a>
-              <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors">
+              <a href={settings.youtubeUrl || "https://youtube.com"} target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors">
                 <Youtube size={18} />
               </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors">
+              <a href={settings.instagramUrl || "https://instagram.com"} target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors">
                 <Instagram size={18} />
               </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors">
+              <a href={settings.twitterUrl || "https://twitter.com"} target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors">
                 <Twitter size={18} />
               </a>
             </div>
@@ -87,15 +90,15 @@ export const Footer: React.FC = () => {
             <ul className="space-y-3.5 text-sm text-neutral-400">
               <li className="flex items-start gap-2.5">
                 <MapPin size={18} className="text-red-500 shrink-0 mt-0.5" />
-                <span>Road 11, Banani Commercial Area, Dhaka - 1213, Bangladesh</span>
+                <span>{settings.contactAddress || "Road 11, Banani Commercial Area, Dhaka - 1213, Bangladesh"}</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Mail size={16} className="text-red-500 shrink-0" />
-                <span>support@foodreviewbd.com</span>
+                <span>{settings.contactEmail || "support@foodreviewbd.com"}</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone size={16} className="text-red-500 shrink-0" />
-                <span>+880 1712-345678</span>
+                <span>{settings.contactPhone || "+880 1712-345678"}</span>
               </li>
             </ul>
           </div>

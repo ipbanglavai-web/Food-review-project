@@ -15,8 +15,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with custom database ID
-export const db = getFirestore(app, firebaseConfig.databaseId);
+// Initialize Firestore with custom database ID and auto-detect long polling for reliable web container connectivity
+export const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+}, firebaseConfig.databaseId);
 
 export const auth = getAuth(app);
 
