@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { HeroCarousel } from '../components/HeroCarousel';
 import { ReviewCard } from '../components/ReviewCard';
 import { OfferCard } from '../components/OfferCard';
 import { useApp } from '../context/AppContext';
-import { Search, Tag, X, Flame, Newspaper, Filter, ChevronRight, Award, Coffee, Pizza, AlertCircle } from 'lucide-react';
+import { Search, Tag, X, Flame, Newspaper, Filter, ChevronLeft, ChevronRight, Award, Coffee, Pizza, AlertCircle } from 'lucide-react';
 import { Review, Offer } from '../types';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,6 +19,27 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
   const [activeTab, setActiveTab] = useState<'reviews' | 'offers'>('reviews');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollCategories = (direction: 'left' | 'right') => {
+    if (categoryScrollRef.current) {
+      const scrollAmount = direction === 'left' ? -200 : 200;
+      categoryScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const handleSelectCategory = (catName: string, e: React.MouseEvent<HTMLButtonElement>) => {
+    setSelectedCategory(catName);
+    const container = categoryScrollRef.current;
+    const button = e.currentTarget;
+    if (container && button) {
+      const containerWidth = container.clientWidth;
+      const buttonLeft = button.offsetLeft;
+      const buttonWidth = button.clientWidth;
+      const targetScrollLeft = buttonLeft - (containerWidth / 2) + (buttonWidth / 2);
+      container.scrollTo({ left: Math.max(0, targetScrollLeft), behavior: 'smooth' });
+    }
+  };
 
   // Search Results State for the modal
   const [searchFilteredReviews, setSearchFilteredReviews] = useState<Review[]>([]);
@@ -139,7 +160,7 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
             {selectedCategory !== 'all' && (
               <button
                 onClick={() => setSelectedCategory('all')}
-                className="text-xs font-bold text-red-600 hover:underline"
+                className="text-xs font-bold text-red-600 hover:underline cursor-pointer"
               >
                 Clear Filters
               </button>
@@ -147,34 +168,56 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
           </div>
 
           {/* Horizontally scrollable category row */}
-          <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-none snap-x items-center">
+          <div className="relative flex items-center group">
             <button
-              onClick={() => setSelectedCategory('all')}
-              className={`shrink-0 px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                selectedCategory === 'all'
-                  ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
-                  : 'bg-white text-neutral-700 border border-neutral-200/60 shadow-sm hover:shadow hover:border-neutral-300'
-              }`}
+              onClick={() => scrollCategories('left')}
+              className="hidden md:flex absolute -left-3 z-10 h-8 w-8 items-center justify-center rounded-full bg-white text-neutral-700 shadow-md border border-neutral-200/80 hover:bg-neutral-50 transition cursor-pointer"
+              aria-label="Scroll left"
             >
-              All Categories
+              <ChevronLeft size={16} />
             </button>
 
-            {categories.map((cat) => {
-              const isSelected = selectedCategory.toLowerCase() === cat.name.toLowerCase();
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.name)}
-                  className={`shrink-0 px-5 py-2.5 rounded-xl text-xs font-bold transition-all snap-start ${
-                    isSelected
-                      ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
-                      : 'bg-white text-neutral-700 border border-neutral-200/60 shadow-sm hover:shadow hover:border-neutral-300'
-                  }`}
-                >
-                  {cat.name}
-                </button>
-              );
-            })}
+            <div
+              ref={categoryScrollRef}
+              className="flex overflow-x-auto gap-2 py-1 px-0.5 scrollbar-none items-center w-full touch-pan-x overscroll-x-contain"
+              style={{ scrollBehavior: 'smooth' }}
+            >
+              <button
+                onClick={(e) => handleSelectCategory('all', e)}
+                className={`shrink-0 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  selectedCategory === 'all'
+                    ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+                    : 'bg-white text-neutral-700 border border-neutral-200/60 shadow-sm hover:shadow hover:border-neutral-300'
+                }`}
+              >
+                All Categories
+              </button>
+
+              {categories.map((cat) => {
+                const isSelected = selectedCategory.toLowerCase() === cat.name.toLowerCase();
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={(e) => handleSelectCategory(cat.name, e)}
+                    className={`shrink-0 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+                        : 'bg-white text-neutral-700 border border-neutral-200/60 shadow-sm hover:shadow hover:border-neutral-300'
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => scrollCategories('right')}
+              className="hidden md:flex absolute -right-3 z-10 h-8 w-8 items-center justify-center rounded-full bg-white text-neutral-700 shadow-md border border-neutral-200/80 hover:bg-neutral-50 transition cursor-pointer"
+              aria-label="Scroll right"
+            >
+              <ChevronRight size={16} />
+            </button>
           </div>
         </div>
 

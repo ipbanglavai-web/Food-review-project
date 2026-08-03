@@ -51,6 +51,7 @@ export interface Category {
   id: string;
   name: string;
   type: 'food' | 'restaurant';
+  order?: number;
 }
 
 export interface Banner {

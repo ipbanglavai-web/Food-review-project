@@ -49,17 +49,17 @@ const INITIAL_STATE: LocalState = {
     }
   ],
   categories: [
-    { id: "cat-biriyani", name: "Best Biriyani", type: "food" },
-    { id: "cat-fastfood", name: "Fast Food", type: "food" },
-    { id: "cat-burger", name: "Burger", type: "food" },
-    { id: "cat-pizza", name: "Pizza", type: "food" },
-    { id: "cat-chinese", name: "Chinese", type: "food" },
-    { id: "cat-bbq", name: "BBQ", type: "food" },
-    { id: "cat-cafe", name: "Cafe", type: "food" },
-    { id: "cat-dessert", name: "Dessert", type: "food" },
-    { id: "cat-streetfood", name: "Street Food", type: "food" },
-    { id: "cat-drinks", name: "Drinks", type: "food" },
-    { id: "cat-seafood", name: "Sea Food", type: "food" }
+    { id: "cat-biriyani", name: "Best Biriyani", type: "food", order: 1 },
+    { id: "cat-fastfood", name: "Fast Food", type: "food", order: 2 },
+    { id: "cat-burger", name: "Burger", type: "food", order: 3 },
+    { id: "cat-pizza", name: "Pizza", type: "food", order: 4 },
+    { id: "cat-chinese", name: "Chinese", type: "food", order: 5 },
+    { id: "cat-bbq", name: "BBQ", type: "food", order: 6 },
+    { id: "cat-cafe", name: "Cafe", type: "food", order: 7 },
+    { id: "cat-dessert", name: "Dessert", type: "food", order: 8 },
+    { id: "cat-streetfood", name: "Street Food", type: "food", order: 9 },
+    { id: "cat-drinks", name: "Drinks", type: "food", order: 10 },
+    { id: "cat-seafood", name: "Sea Food", type: "food", order: 11 }
   ],
   reviews: [
     {
@@ -287,7 +287,18 @@ export async function initializeStore(): Promise<void> {
     // Fetch Categories
     const categoriesSnap = await getDocs(collection(db, 'categories'));
     if (!categoriesSnap.empty) {
-      cachedState.categories = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+      const cats = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+      const fallbackMap: Record<string, number> = {
+        'cat-biriyani': 1, 'cat-fastfood': 2, 'cat-burger': 3, 'cat-pizza': 4,
+        'cat-chinese': 5, 'cat-bbq': 6, 'cat-cafe': 7, 'cat-dessert': 8,
+        'cat-streetfood': 9, 'cat-drinks': 10, 'cat-seafood': 11
+      };
+      cats.sort((a, b) => {
+        const orderA = a.order ?? fallbackMap[a.id] ?? 99;
+        const orderB = b.order ?? fallbackMap[b.id] ?? 99;
+        return orderA - orderB;
+      });
+      cachedState.categories = cats;
     } else if (cachedState.categories.length === 0) {
       cachedState.categories = [...INITIAL_STATE.categories];
     }
