@@ -178,9 +178,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection 
               </div>
               <button
                 onClick={() => setIsDrawerOpen(false)}
-                className="rounded-full p-1.5 hover:bg-neutral-100 transition"
+                className="rounded-full p-2 hover:bg-red-50 transition"
               >
-                <X size={20} />
+                <X size={22} className="text-red-600" />
               </button>
             </div>
 
