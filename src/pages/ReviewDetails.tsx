@@ -15,20 +15,23 @@ import {
   Award, 
   Video,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Clock,
+  CheckCircle2
 } from 'lucide-react';
 import { isReviewLikedLocally } from '../dbStore';
 
 export const ReviewDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { reviews, incrementViews, toggleLike } = useApp();
+  const { reviews, incrementViews, toggleLike, currentUser, approveReview } = useApp();
 
   const [review, setReview] = useState<Review | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [viewsCount, setViewsCount] = useState(0);
   const [showShareToast, setShowShareToast] = useState(false);
+  const [approving, setApproving] = useState(false);
 
   // Find the current review
   useEffect(() => {
@@ -102,9 +105,22 @@ export const ReviewDetails: React.FC = () => {
     }
   };
 
-  // Find related reviews (same category, excluding this one)
+  const handleApproveNow = async () => {
+    if (!review) return;
+    try {
+      setApproving(true);
+      await approveReview(review.id);
+      setReview({ ...review, status: 'approved' });
+    } catch (e) {
+      console.error("Approve failed:", e);
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  // Find related reviews (same category, excluding this one and pending reviews)
   const relatedReviews = reviews
-    .filter((r) => r.foodCategory === review.foodCategory && r.id !== review.id)
+    .filter((r) => r.foodCategory === review.foodCategory && r.id !== review.id && (!r.status || r.status === 'approved'))
     .slice(0, 3);
 
   const formattedDate = new Date(review.publishDate).toLocaleDateString('en-US', {
@@ -127,6 +143,31 @@ export const ReviewDetails: React.FC = () => {
 
       {/* Master Content Layout */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+        {/* Pending Review Banner */}
+        {review.status === 'pending' && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500 text-white rounded-xl shrink-0">
+                <Clock size={20} />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-xs uppercase tracking-wider text-amber-900">Pending Admin Approval</h4>
+                <p className="text-xs text-amber-800 mt-0.5">This review was submitted by a moderator and is not yet visible to public site visitors.</p>
+              </div>
+            </div>
+            {currentUser?.role === 'admin' && (
+              <button
+                onClick={handleApproveNow}
+                disabled={approving}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl cursor-pointer transition flex items-center gap-2 shrink-0 shadow-sm"
+              >
+                <CheckCircle2 size={16} />
+                <span>{approving ? 'Approving...' : 'Approve Now'}</span>
+              </button>
+            )}
+          </div>
+        )}
         
         {/* Title details */}
         <div className="mb-6">

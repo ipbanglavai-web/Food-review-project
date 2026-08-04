@@ -7,7 +7,9 @@ import {
   getBanners, 
   getSettings, 
   getModerators,
+  getMessages,
   addReview as dbAddReview,
+  approveReview as dbApproveReview,
   updateReview as dbUpdateReview,
   deleteReview as dbDeleteReview,
   addOffer as dbAddOffer,
@@ -21,11 +23,14 @@ import {
   addModerator as dbAddModerator,
   updateModerator as dbUpdateModerator,
   deleteModerator as dbDeleteModerator,
+  addMessage as dbAddMessage,
+  markMessageAsRead as dbMarkMessageAsRead,
+  deleteMessage as dbDeleteMessage,
   incrementReviewViews as dbIncrementReviewViews,
   toggleReviewLike as dbToggleReviewLike,
   saveAppSettings as dbSaveAppSettings
 } from '../dbStore';
-import { Review, Offer, Moderator, Category, Banner, AppSettings } from '../types';
+import { Review, Offer, Moderator, Category, Banner, AppSettings, ContactMessage } from '../types';
 
 interface AppContextType {
   loading: boolean;
@@ -35,10 +40,12 @@ interface AppContextType {
   banners: Banner[];
   settings: AppSettings;
   moderators: Moderator[];
+  messages: ContactMessage[];
   currentUser: Moderator | null;
   login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
   addReview: (rev: Omit<Review, 'id' | 'views' | 'likes'>) => Promise<void>;
+  approveReview: (id: string) => Promise<void>;
   updateReview: (rev: Review) => Promise<void>;
   deleteReview: (id: string) => Promise<void>;
   addOffer: (off: Omit<Offer, 'id'>) => Promise<void>;
@@ -52,6 +59,9 @@ interface AppContextType {
   addModerator: (mod: Omit<Moderator, 'id'>) => Promise<void>;
   updateModerator: (mod: Moderator) => Promise<void>;
   deleteModerator: (id: string) => Promise<void>;
+  addMessage: (msg: Omit<ContactMessage, 'id' | 'submittedAt' | 'read'>) => Promise<void>;
+  markMessageRead: (id: string, read?: boolean) => Promise<void>;
+  deleteMessage: (id: string) => Promise<void>;
   incrementViews: (id: string) => Promise<number>;
   toggleLike: (id: string) => Promise<{ liked: boolean; likes: number }>;
   saveSettings: (settings: Partial<AppSettings>) => Promise<void>;
@@ -67,7 +77,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [banners, setBanners] = useState<Banner[]>(() => getBanners());
   const [settings, setSettings] = useState<AppSettings>(() => getSettings());
   const [moderators, setModerators] = useState<Moderator[]>(() => getModerators());
+  const [messages, setMessages] = useState<ContactMessage[]>(() => getMessages());
   const [currentUser, setCurrentUser] = useState<Moderator | null>(null);
+
+  const refreshMessages = () => setMessages([...getMessages()]);
 
   // Load state on mount
   useEffect(() => {
@@ -80,6 +93,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setBanners(getBanners());
         setSettings(getSettings());
         setModerators(getModerators());
+        setMessages(getMessages());
 
         // Restore user session if saved
         const storedUser = localStorage.getItem('food_review_bd_session');
@@ -155,6 +169,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshReviews();
   };
 
+  const approveReview = async (id: string) => {
+    await dbApproveReview(id);
+    refreshReviews();
+  };
+
   const updateReview = async (rev: Review) => {
     await dbUpdateReview(rev);
     refreshReviews();
@@ -220,6 +239,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshModerators();
   };
 
+  const addMessage = async (msg: Omit<ContactMessage, 'id' | 'submittedAt' | 'read'>) => {
+    await dbAddMessage(msg);
+    refreshMessages();
+  };
+
+  const markMessageRead = async (id: string, read: boolean = true) => {
+    await dbMarkMessageAsRead(id, read);
+    refreshMessages();
+  };
+
+  const deleteMessage = async (id: string) => {
+    await dbDeleteMessage(id);
+    refreshMessages();
+  };
+
   const incrementViews = async (id: string) => {
     const updated = await dbIncrementReviewViews(id);
     refreshReviews();
@@ -246,10 +280,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       banners,
       settings,
       moderators,
+      messages,
       currentUser,
       login,
       logout,
       addReview,
+      approveReview,
       updateReview,
       deleteReview,
       addOffer,
@@ -263,6 +299,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addModerator,
       updateModerator,
       deleteModerator,
+      addMessage,
+      markMessageRead,
+      deleteMessage,
       incrementViews,
       toggleLike,
       saveSettings

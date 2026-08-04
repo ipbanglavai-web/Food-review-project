@@ -5,7 +5,7 @@ import { OfferCard } from '../components/OfferCard';
 import { useApp } from '../context/AppContext';
 import { Search, Tag, X, Flame, Newspaper, Filter, ChevronLeft, ChevronRight, Award, Coffee, Pizza, AlertCircle } from 'lucide-react';
 import { Review, Offer } from '../types';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface HomeProps {
   searchOpen: boolean;
@@ -15,11 +15,65 @@ interface HomeProps {
 export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
   const { reviews, offers, categories, banners, loading } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [activeTab, setActiveTab] = useState<'reviews' | 'offers'>('reviews');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const categoryScrollRef = useRef<HTMLDivElement>(null);
+
+  // Sync tab and scroll target when navigation occurs via query, hash, or state
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tabParam = searchParams.get('tab');
+    const hash = location.hash.replace('#', '');
+    const stateTab = location.state?.activeTab;
+
+    let targetTab: 'reviews' | 'offers' | null = null;
+    if (tabParam === 'offers' || stateTab === 'offers' || hash === 'offers') {
+      targetTab = 'offers';
+    } else if (tabParam === 'reviews' || stateTab === 'reviews' || hash === 'reviews') {
+      targetTab = 'reviews';
+    }
+
+    if (targetTab) {
+      setActiveTab(targetTab);
+    }
+
+    const scrollToId = hash || location.state?.scrollTo || (targetTab ? 'feed' : null);
+    if (location.state?.selectedCategory) {
+      setSelectedCategory(location.state.selectedCategory);
+    }
+    if (scrollToId) {
+      setTimeout(() => {
+        const el = document.getElementById(scrollToId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [location.search, location.hash, location.state]);
+
+  // Listen for custom nav events from Navbar for instant response
+  useEffect(() => {
+    const handleNavClick = (e: CustomEvent<{ section: string; activeTab?: 'reviews' | 'offers' }>) => {
+      const { section, activeTab: eventTab } = e.detail;
+      if (eventTab) {
+        setActiveTab(eventTab);
+      }
+      setTimeout(() => {
+        const el = document.getElementById(section);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 50);
+    };
+
+    window.addEventListener('nav-section-click', handleNavClick as EventListener);
+    return () => {
+      window.removeEventListener('nav-section-click', handleNavClick as EventListener);
+    };
+  }, []);
 
   const scrollCategories = (direction: 'left' | 'right') => {
     if (categoryScrollRef.current) {
@@ -45,6 +99,11 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
   const [searchFilteredReviews, setSearchFilteredReviews] = useState<Review[]>([]);
   const [searchFilteredOffers, setSearchFilteredOffers] = useState<Offer[]>([]);
 
+  // Filter public approved reviews only
+  const publicReviews = useMemo(() => {
+    return reviews.filter((r) => !r.status || r.status === 'approved');
+  }, [reviews]);
+
   // Update real-time search matches when query changes
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -55,7 +114,7 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
 
     const query = searchQuery.toLowerCase();
 
-    const matchedReviews = reviews.filter(
+    const matchedReviews = publicReviews.filter(
       (r) =>
         r.restaurantName.toLowerCase().includes(query) ||
         r.foodCategory.toLowerCase().includes(query) ||
@@ -75,15 +134,15 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
 
     setSearchFilteredReviews(matchedReviews);
     setSearchFilteredOffers(matchedOffers);
-  }, [searchQuery, reviews, offers]);
+  }, [searchQuery, publicReviews, offers]);
 
   // Filter lists based on the category selected from horizontal carousel using useMemo
   const filteredReviews = useMemo(() => {
-    return reviews.filter((r) => {
+    return publicReviews.filter((r) => {
       if (selectedCategory === 'all') return true;
       return r.foodCategory.toLowerCase() === selectedCategory.toLowerCase();
     });
-  }, [reviews, selectedCategory]);
+  }, [publicReviews, selectedCategory]);
 
   const filteredOffers = useMemo(() => {
     return offers.filter((o) => {
@@ -93,8 +152,8 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
   }, [offers, selectedCategory]);
 
   const featuredReviews = useMemo(() => {
-    return reviews.filter((r) => r.featured);
-  }, [reviews]);
+    return publicReviews.filter((r) => r.featured);
+  }, [publicReviews]);
 
   const featuredOffers = useMemo(() => {
     return offers.filter((o) => o.featured && o.status === 'active');
@@ -104,10 +163,14 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
     <div className="bg-neutral-50 min-h-screen pb-16">
       
       {/* Hero peak banner carousel */}
-      <HeroCarousel banners={banners} />
+      <div id="hero">
+        <HeroCarousel banners={banners} />
+      </div>
 
       {/* Tabs bar immediately below hero */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-4 sm:mt-5">
+      <div id="feed" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-4 sm:mt-5 scroll-mt-20">
+        <div id="reviews" className="scroll-mt-20" />
+        <div id="offers" className="scroll-mt-20" />
         <div className="flex justify-center">
           <div className="inline-flex rounded-2xl bg-neutral-100 p-1.5 shadow-inner">
             {/* Top Reviews Tab */}
@@ -151,7 +214,7 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-5 sm:mt-6">
         
         {/* Category Carousel Row */}
-        <div className="mb-5">
+        <div id="categories" className="mb-5 scroll-mt-24">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
               <Filter size={13} />

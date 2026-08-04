@@ -26,20 +26,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection 
   const handleMenuClick = (item: typeof menuItems[0]) => {
     setIsDrawerOpen(false);
     if (item.path === '/' && item.section) {
+      const targetTab = item.section === 'offers' ? 'offers' : 'reviews';
+      const targetPath = `/?tab=${targetTab}#${item.section}`;
+      
       if (location.pathname !== '/') {
-        navigate('/');
-        // Wait a split second for mounting, then scroll
-        setTimeout(() => {
-          const el = document.getElementById(item.section!);
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
-        }, 300);
+        navigate(targetPath, { state: { activeTab: targetTab, scrollTo: item.section } });
       } else {
-        if (onScrollToSection) {
-          onScrollToSection(item.section);
-        } else {
-          const el = document.getElementById(item.section);
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
-        }
+        navigate(targetPath, { state: { activeTab: targetTab, scrollTo: item.section }, replace: true });
+        window.dispatchEvent(new CustomEvent('nav-section-click', { detail: { section: item.section, activeTab: targetTab } }));
       }
     } else {
       navigate(item.path);
@@ -63,12 +57,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection 
           </div>
 
           {/* Center: Desktop Menu */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden lg:flex items-center space-x-6 lg:space-x-8">
             {menuItems.map((item) => (
               <button
                 key={item.name}
                 onClick={() => handleMenuClick(item)}
-                className="text-sm font-semibold text-neutral-700 transition hover:text-red-600 cursor-pointer"
+                className="text-sm font-semibold text-neutral-700 transition hover:text-red-600 cursor-pointer whitespace-nowrap"
               >
                 {item.name}
               </button>
@@ -76,7 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection 
           </nav>
 
           {/* Right: Actions */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden lg:flex items-center space-x-4">
             {onSearchOpen && (
               <button
                 onClick={onSearchOpen}
@@ -107,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection 
             ) : (
               <Link
                 to="/login"
-                className="flex items-center gap-1.5 rounded-full bg-black px-5 py-2 text-sm font-bold text-white transition hover:bg-neutral-800 shadow-sm"
+                className="flex items-center gap-1.5 rounded-full bg-black px-5 py-2 text-sm font-bold text-white transition hover:bg-neutral-800 shadow-sm whitespace-nowrap"
               >
                 <User size={16} />
                 Sign In
@@ -115,8 +109,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection 
             )}
           </div>
 
-          {/* Mobile Actions: Hamburguer & Search */}
-          <div className="flex md:hidden items-center space-x-2">
+          {/* Mobile & Tablet Actions: Hamburger & Search */}
+          <div className="flex lg:hidden items-center space-x-2">
             {onSearchOpen && (
               <button
                 onClick={onSearchOpen}

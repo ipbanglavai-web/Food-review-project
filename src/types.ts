@@ -19,6 +19,7 @@ export interface Review {
   seoTitle?: string;
   seoDescription?: string;
   adminName: string;
+  status?: 'approved' | 'pending';
 }
 
 export interface Offer {
@@ -59,6 +60,8 @@ export interface Banner {
   imageUrl: string;
   linkUrl: string;
   title: string;
+  subtitle?: string;
+  description?: string;
   order: number;
 }
 
@@ -74,4 +77,30 @@ export interface AppSettings {
   youtubeUrl?: string;
   instagramUrl?: string;
   twitterUrl?: string;
+
+  // About Us Page Details
+  aboutEyebrow?: string;
+  aboutTitle?: string;
+  aboutDescription?: string;
+  aboutCard1Title?: string;
+  aboutCard1Desc?: string;
+  aboutCard2Title?: string;
+  aboutCard2Desc?: string;
+  aboutCard3Title?: string;
+  aboutCard3Desc?: string;
+  aboutStoryTitle?: string;
+  aboutStoryParagraph1?: string;
+  aboutStoryParagraph2?: string;
 }
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  submittedAt: string; // ISO date string
+  read: boolean;
+}
+

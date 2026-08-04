@@ -3,17 +3,33 @@ import { Mail, Phone, MapPin, Send, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const Contact: React.FC = () => {
-  const { settings } = useApp();
+  const { settings, addMessage } = useApp();
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
+    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) return;
+    
+    setSubmitting(true);
+    try {
+      await addMessage({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        subject: formData.subject.trim() || 'General Inquiry',
+        message: formData.message.trim()
+      });
+      setSubmitted(true);
       setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 3000);
+      setTimeout(() => {
+        setSubmitted(false);
+      }, 4000);
+    } catch (err) {
+      console.error("Error submitting message:", err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

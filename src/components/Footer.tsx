@@ -45,13 +45,13 @@ export const Footer: React.FC = () => {
             <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4">Quick Links</h3>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <Link to="/" className="hover:text-red-500 transition-colors">Home Feed</Link>
+                <Link to="/" state={{ activeTab: 'reviews', selectedCategory: 'all' }} className="hover:text-red-500 transition-colors">Home Feed</Link>
               </li>
               <li>
-                <a href="#reviews" className="hover:text-red-500 transition-colors">Top Reviews</a>
+                <Link to="/" state={{ activeTab: 'reviews', scrollTo: 'reviews', selectedCategory: 'all' }} className="hover:text-red-500 transition-colors">Top Reviews</Link>
               </li>
               <li>
-                <a href="#offers" className="hover:text-red-500 transition-colors">Restaurant Offers</a>
+                <Link to="/" state={{ activeTab: 'offers', scrollTo: 'offers', selectedCategory: 'all' }} className="hover:text-red-500 transition-colors">Restaurant Offers</Link>
               </li>
               <li>
                 <Link to="/about" className="hover:text-red-500 transition-colors">About Us</Link>
@@ -67,19 +67,19 @@ export const Footer: React.FC = () => {
             <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4">Popular Food</h3>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <span className="hover:text-red-500 transition-colors cursor-pointer">Best Old Dhaka Biriyani</span>
+                <Link to="/" state={{ selectedCategory: 'Best Biriyani', scrollTo: 'reviews' }} className="hover:text-red-500 transition-colors cursor-pointer block">Best Old Dhaka Biriyani</Link>
               </li>
               <li>
-                <span className="hover:text-red-500 transition-colors cursor-pointer">Gourmet Beef Burgers</span>
+                <Link to="/" state={{ selectedCategory: 'Burger', scrollTo: 'reviews' }} className="hover:text-red-500 transition-colors cursor-pointer block">Gourmet Beef Burgers</Link>
               </li>
               <li>
-                <span className="hover:text-red-500 transition-colors cursor-pointer">Thin Crust Woodfired Pizzas</span>
+                <Link to="/" state={{ selectedCategory: 'Pizza', scrollTo: 'reviews' }} className="hover:text-red-500 transition-colors cursor-pointer block">Thin Crust Woodfired Pizzas</Link>
               </li>
               <li>
-                <span className="hover:text-red-500 transition-colors cursor-pointer">Authentic Chinese Platters</span>
+                <Link to="/" state={{ selectedCategory: 'Chinese', scrollTo: 'reviews' }} className="hover:text-red-500 transition-colors cursor-pointer block">Authentic Chinese Platters</Link>
               </li>
               <li>
-                <span className="hover:text-red-500 transition-colors cursor-pointer">Traditional Desserts & Coffee</span>
+                <Link to="/" state={{ selectedCategory: 'Desserts', scrollTo: 'reviews' }} className="hover:text-red-500 transition-colors cursor-pointer block">Traditional Desserts & Coffee</Link>
               </li>
             </ul>
           </div>

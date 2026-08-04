@@ -9,7 +9,7 @@ import {
   increment 
 } from 'firebase/firestore';
 import { db, seedDatabase } from './firebase';
-import { Review, Offer, Moderator, Category, Banner, AppSettings } from './types';
+import { Review, Offer, Moderator, Category, Banner, AppSettings, ContactMessage } from './types';
 
 // Let's create a fallback mock storage in localStorage in case firebase experiences lag or is blocked
 const LOCAL_STORAGE_KEY = 'food_review_bd_local_data';
@@ -21,6 +21,7 @@ interface LocalState {
   categories: Category[];
   banners: Banner[];
   settings: AppSettings;
+  messages: ContactMessage[];
 }
 
 // Initial default state for local fallback and cache
@@ -30,21 +31,27 @@ const INITIAL_STATE: LocalState = {
       id: "banner-1",
       imageUrl: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?q=80&w=1600&h=900&fit=crop",
       linkUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      title: "Sultan's Dine Legendary Kacchi Biriyani - The Taste of Dhaka",
+      title: "Sultan's Dine Legendary Kacchi Biriyani",
+      subtitle: "Authentic Old Dhaka Style Mutton Kacchi with Borhani",
+      description: "Experience the rich aroma of long-grain Basmati rice and melt-in-the-mouth mutton cooked to perfection.",
       order: 1
     },
     {
       id: "banner-2",
       imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1600&h=900&fit=crop",
       linkUrl: "https://www.facebook.com",
-      title: "Chillox Ultimate Smoky Burgers - Dhaka's Favorite Burger Joint",
+      title: "Chillox Ultimate Smoky Burgers",
+      subtitle: "Dhaka's Most Loved Gourmet Beef & Chicken Burgers",
+      description: "Juicy double patties loaded with melted cheese, caramelized onions and signature secret sauce.",
       order: 2
     },
     {
       id: "banner-3",
       imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1600&h=900&fit=crop",
       linkUrl: "https://www.youtube.com",
-      title: "Woodfired Pizza Express - Crispy, Cheesy & Hot Fresh Out of Oven",
+      title: "Woodfired Pizza Express",
+      subtitle: "Crispy, Cheesy & Hot Fresh Out of Italian Brick Oven",
+      description: "Hand-tossed thin crust pizzas topped with fresh mozzarella, basil and wood-smoked toppings.",
       order: 3
     }
   ],
@@ -270,8 +277,54 @@ const INITIAL_STATE: LocalState = {
     facebookUrl: "https://facebook.com",
     youtubeUrl: "https://youtube.com",
     instagramUrl: "https://instagram.com",
-    twitterUrl: "https://twitter.com"
-  }
+    twitterUrl: "https://twitter.com",
+
+    // Default About Us Page details
+    aboutEyebrow: "Who We Are",
+    aboutTitle: "About Food Review Bangladesh",
+    aboutDescription: "We are Bangladesh's premier, independent culinary community. Our staff and moderators travel across the country to bring you unbiased reviews, high-definition videos, and exclusive discount coupons.",
+    aboutCard1Title: "Unbiased Ratings",
+    aboutCard1Desc: "We pay for our meals. Our reviews represent honest assessments of quality, price, and cleanliness.",
+    aboutCard2Title: "Trusted Coupons",
+    aboutCard2Desc: "We coordinate directly with restaurant managements to offer real, working discount codes.",
+    aboutCard3Title: "Local Cuisines",
+    aboutCard3Desc: "From Old Dhaka's traditional Kacchi Biriyani to Banani's gourmet burgers, we cover everything.",
+    aboutStoryTitle: "Our Culinary Journey",
+    aboutStoryParagraph1: "Food Review Bangladesh started as a small group of passionate food critics in Dhaka. Realizing there was no single resource compiling both detailed text write-ups, video walkthroughs, and verified discount coupons in a beautiful visual interface, we built this premium restaurant platform.",
+    aboutStoryParagraph2: "Today, our platform has verified over 150 restaurants, saved users hundreds of thousands of BDT in discount coupon redemptions, and expanded to represent cities beyond Dhaka, including Chittagong, Sylhet, and Rajshahi."
+  },
+  messages: [
+    {
+      id: "msg-1",
+      name: "Tanvir Ahmed",
+      email: "tanvir.burgers@gmail.com",
+      phone: "+880 1711-223344",
+      subject: "Restaurant Review Request for Burger King Banani",
+      message: "Hello Food Review BD team, we recently opened our gourmet burger lounge in Banani Road 11 and would love to invite your reviewer team for an honest review and video feature.",
+      submittedAt: "2026-08-02T10:30:00Z",
+      read: false
+    },
+    {
+      id: "msg-2",
+      name: "Sadiya Rahman",
+      email: "sadiya@pizzaguild.bd",
+      phone: "+880 1819-887766",
+      subject: "Discount Coupon Partnership Inquiry",
+      message: "Hi! We are offering a 20% discount coupon for all Food Review Bangladesh users at Woodfired Pizza Express. Please let us know how we can publish this coupon offer on your site.",
+      submittedAt: "2026-08-01T15:45:00Z",
+      read: true
+    },
+    {
+      id: "msg-3",
+      name: "Abrar Chowdhury",
+      email: "abrar.chowdhury@yahoo.com",
+      phone: "+880 1912-345678",
+      subject: "Feedback regarding Kacchi Biriyani ratings",
+      message: "Great work on the Sultan's Dine review! The video link was super helpful. Keep up the authentic reviews!",
+      submittedAt: "2026-07-31T09:12:00Z",
+      read: true
+    }
+  ]
 };
 
 // Global cache in memory
@@ -341,6 +394,22 @@ export async function initializeStore(): Promise<void> {
     const settingsDoc = await getDoc(doc(db, 'settings', 'app'));
     if (settingsDoc.exists()) {
       cachedState.settings = settingsDoc.data() as AppSettings;
+    }
+
+    // Fetch Messages
+    try {
+      const msgsSnap = await getDocs(collection(db, 'messages'));
+      if (!msgsSnap.empty) {
+        cachedState.messages = msgsSnap.docs
+          .map(doc => ({ id: doc.id, ...doc.data() } as ContactMessage))
+          .sort((a,b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+      } else if (!cachedState.messages || cachedState.messages.length === 0) {
+        cachedState.messages = [...INITIAL_STATE.messages];
+      }
+    } catch (_) {
+      if (!cachedState.messages || cachedState.messages.length === 0) {
+        cachedState.messages = [...INITIAL_STATE.messages];
+      }
     }
 
     // Save to localStorage as a cache
@@ -514,8 +583,7 @@ export async function deleteBanner(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'banners', id));
   } catch (e) {
-    console.error("Firestore error deleting banner:", e);
-    throw e;
+    console.warn("Firestore error deleting banner:", e);
   }
 }
 
@@ -555,8 +623,7 @@ export async function deleteCategory(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'categories', id));
   } catch (e) {
-    console.error("Firestore error deleting category:", e);
-    throw e;
+    console.warn("Firestore error deleting category:", e);
   }
 }
 
@@ -580,6 +647,7 @@ export async function addReview(review: Omit<Review, 'id' | 'views' | 'likes'>):
   const newId = `review-${Date.now()}`;
   const newReview: Review = {
     id: newId,
+    status: review.status || 'approved',
     ...review,
     views: 0,
     likes: 0
@@ -593,6 +661,22 @@ export async function addReview(review: Omit<Review, 'id' | 'views' | 'likes'>):
     throw e;
   }
   return newReview;
+}
+
+export async function approveReview(id: string): Promise<Review | null> {
+  const index = cachedState.reviews.findIndex(r => r.id === id);
+  if (index !== -1) {
+    cachedState.reviews[index].status = 'approved';
+    const updated = cachedState.reviews[index];
+    saveLocalCache();
+    try {
+      await updateDoc(doc(db, 'reviews', id), { status: 'approved' });
+    } catch (e) {
+      console.error("Firestore error approving review:", e);
+    }
+    return updated;
+  }
+  return null;
 }
 
 export async function updateReview(review: Review): Promise<Review> {
@@ -616,8 +700,7 @@ export async function deleteReview(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'reviews', id));
   } catch (e) {
-    console.error("Firestore error deleting review:", e);
-    throw e;
+    console.warn("Firestore error deleting review:", e);
   }
 }
 
@@ -657,8 +740,7 @@ export async function deleteOffer(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'offers', id));
   } catch (e) {
-    console.error("Firestore error deleting offer:", e);
-    throw e;
+    console.warn("Firestore error deleting offer:", e);
   }
 }
 
@@ -698,7 +780,56 @@ export async function deleteModerator(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'moderators', id));
   } catch (e) {
-    console.error("Firestore error deleting moderator:", e);
-    throw e;
+    console.warn("Firestore error deleting moderator:", e);
   }
 }
+
+// USER MESSAGES MANAGEMENT
+export function getMessages(): ContactMessage[] {
+  return cachedState.messages || [];
+}
+
+export async function addMessage(msg: Omit<ContactMessage, 'id' | 'submittedAt' | 'read'>): Promise<ContactMessage> {
+  const newId = `msg-${Date.now()}`;
+  const newMsg: ContactMessage = {
+    id: newId,
+    ...msg,
+    submittedAt: new Date().toISOString(),
+    read: false,
+  };
+  if (!cachedState.messages) cachedState.messages = [];
+  cachedState.messages.unshift(newMsg);
+  saveLocalCache();
+  try {
+    await setDoc(doc(db, 'messages', newId), cleanData(newMsg));
+  } catch (e) {
+    console.error("Firestore error adding message:", e);
+  }
+  return newMsg;
+}
+
+export async function markMessageAsRead(id: string, read: boolean = true): Promise<void> {
+  if (!cachedState.messages) return;
+  const index = cachedState.messages.findIndex(m => m.id === id);
+  if (index !== -1) {
+    cachedState.messages[index].read = read;
+    saveLocalCache();
+  }
+  try {
+    await updateDoc(doc(db, 'messages', id), { read });
+  } catch (e) {
+    console.error("Firestore error updating message read status:", e);
+  }
+}
+
+export async function deleteMessage(id: string): Promise<void> {
+  if (!cachedState.messages) return;
+  cachedState.messages = cachedState.messages.filter(m => m.id !== id);
+  saveLocalCache();
+  try {
+    await deleteDoc(doc(db, 'messages', id));
+  } catch (e) {
+    console.warn("Firestore error deleting message:", e);
+  }
+}
+

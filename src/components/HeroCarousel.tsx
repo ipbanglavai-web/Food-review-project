@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, ExternalLink } from 'lucide-react';
+import { Play, ExternalLink, Edit3 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Banner } from '../types';
+import { useApp } from '../context/AppContext';
 
 interface HeroCarouselProps {
   banners: Banner[];
 }
 
 export const HeroCarousel: React.FC<HeroCarouselProps> = ({ banners }) => {
+  const { currentUser } = useApp();
   const N = banners ? banners.length : 0;
 
   // Start at the index of the first slide of the middle copy (which is N)
@@ -239,13 +242,37 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ banners }) => {
                         Featured Review
                       </div>
 
+                      {/* Admin Quick Edit Link */}
+                      {(currentUser?.role === 'admin' || currentUser?.role === 'moderator') && (
+                        <Link
+                          to="/admin"
+                          state={{ activeTab: 'banners' }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute top-4 right-4 bg-neutral-900/90 hover:bg-black text-white text-[10px] md:text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 border border-white/20 transition cursor-pointer z-20"
+                        >
+                          <Edit3 size={12} /> Edit Banners
+                        </Link>
+                      )}
+
                       {/* Content inside Cover */}
-                      <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 md:p-8 text-white space-y-1.5 sm:space-y-3">
+                      <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 md:p-8 text-white space-y-1.5 sm:space-y-2">
                         <h2 className="text-sm sm:text-lg md:text-2xl lg:text-3xl font-extrabold leading-tight tracking-tight max-w-3xl font-sans drop-shadow-sm line-clamp-2">
                           {banner.title}
                         </h2>
+
+                        {banner.subtitle && (
+                          <p className="text-xs sm:text-sm font-bold text-yellow-300/90 line-clamp-1 max-w-2xl drop-shadow-xs">
+                            {banner.subtitle}
+                          </p>
+                        )}
+
+                        {banner.description && (
+                          <p className="hidden sm:block text-xs sm:text-sm text-neutral-200 line-clamp-2 max-w-2xl drop-shadow-xs font-normal">
+                            {banner.description}
+                          </p>
+                        )}
                         
-                        <div className="flex flex-wrap items-center gap-3 pt-0.5">
+                        <div className="flex flex-wrap items-center gap-3 pt-1">
                           <a
                             href={banner.linkUrl}
                             target="_blank"

@@ -4,21 +4,21 @@ import { initializeFirestore, getFirestore, collection, getDocs, doc, getDoc, se
 
 // Configuration from generated Firebase credentials
 const firebaseConfig = {
-  apiKey: "AIzaSyD3DUaQXTMtRV-G7pLxUPYE9bv6ymKe2Gc",
-  authDomain: "gen-lang-client-0477283342.firebaseapp.com",
-  projectId: "gen-lang-client-0477283342",
-  storageBucket: "gen-lang-client-0477283342.firebasestorage.app",
-  messagingSenderId: "1005502270346",
-  appId: "1:1005502270346:web:56d412b31cb2f0159c9673",
-  databaseId: "ai-studio-foodreviewbangla-24c70322-4e01-429d-b225-bca053b3c146"
+  apiKey: "AIzaSyC9_9iOctGG6cY3upBkgJrAU3WrT__DghA",
+  authDomain: "foodproject-ad2bd.firebaseapp.com",
+  projectId: "foodproject-ad2bd",
+  storageBucket: "foodproject-ad2bd.firebasestorage.app",
+  messagingSenderId: "895633123121",
+  appId: "1:895633123121:web:f5cc2e2a67bf205cb4b210",
+  measurementId: "G-6M8N6CF935"
 };
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with custom database ID and auto-detect long polling for reliable web container connectivity
+// Initialize Firestore with auto-detect long polling for reliable web container connectivity
 export const db = initializeFirestore(app, {
   experimentalAutoDetectLongPolling: true,
-}, firebaseConfig.databaseId);
+});
 
 export const auth = getAuth(app);
 
