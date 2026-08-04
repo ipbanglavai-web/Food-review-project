@@ -265,6 +265,8 @@ const DEFAULT_MODERATORS = [
 const DEFAULT_SETTINGS = {
   desktopLogo: "",
   mobileLogo: "",
+  footerDesktopLogo: "",
+  footerMobileLogo: "",
   siteName: "Food Review Bangladesh",
   description: "A premium restaurant reviews and discount offers platform in Bangladesh."
 };

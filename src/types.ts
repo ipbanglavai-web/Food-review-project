@@ -68,6 +68,8 @@ export interface Banner {
 export interface AppSettings {
   desktopLogo?: string;
   mobileLogo?: string;
+  footerDesktopLogo?: string;
+  footerMobileLogo?: string;
   siteName: string;
   description: string;
   contactAddress?: string;

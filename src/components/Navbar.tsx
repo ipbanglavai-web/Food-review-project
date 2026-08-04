@@ -47,12 +47,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection 
           {/* Left: Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-600 font-bold text-white shadow-md shadow-red-200">
-                F
-              </span>
-              <span className="bg-gradient-to-r from-red-600 to-black bg-clip-text text-xl font-black tracking-tight text-transparent font-sans">
-                FoodReview<span className="text-yellow-500">BD</span>
-              </span>
+              {settings.desktopLogo ? (
+                <img
+                  src={settings.desktopLogo}
+                  alt="Food Review BD"
+                  className="h-10 max-h-12 w-auto object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-600 font-bold text-white shadow-md shadow-red-200">
+                    F
+                  </span>
+                  <span className="bg-gradient-to-r from-red-600 to-black bg-clip-text text-xl font-black tracking-tight text-transparent font-sans">
+                    FoodReview<span className="text-yellow-500">BD</span>
+                  </span>
+                </>
+              )}
             </Link>
           </div>
 
@@ -147,12 +158,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection 
           <div className="relative z-10 flex w-4/5 max-w-sm flex-col bg-white p-6 shadow-2xl h-full transform transition-transform duration-300 ease-in-out">
             <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 font-bold text-white shadow-sm">
-                  F
-                </span>
-                <span className="text-lg font-black text-black">
-                  FoodReview<span className="text-yellow-500">BD</span>
-                </span>
+                {settings.mobileLogo || settings.desktopLogo ? (
+                  <img
+                    src={settings.mobileLogo || settings.desktopLogo}
+                    alt="Food Review BD"
+                    className="h-9 max-h-10 w-auto object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 font-bold text-white shadow-sm">
+                      F
+                    </span>
+                    <span className="text-lg font-black text-black">
+                      FoodReview<span className="text-yellow-500">BD</span>
+                    </span>
+                  </>
+                )}
               </div>
               <button
                 onClick={() => setIsDrawerOpen(false)}

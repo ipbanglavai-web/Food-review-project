@@ -14,12 +14,23 @@ export const Footer: React.FC = () => {
           {/* Logo & About */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-600 font-bold text-white shadow-md shadow-red-900/50">
-                F
-              </span>
-              <span className="text-xl font-black tracking-tight text-white font-sans">
-                FoodReview<span className="text-yellow-500">BD</span>
-              </span>
+              {settings.footerDesktopLogo || settings.footerMobileLogo || settings.desktopLogo ? (
+                <img
+                  src={settings.footerDesktopLogo || settings.footerMobileLogo || settings.desktopLogo}
+                  alt="Food Review BD"
+                  className="h-10 max-h-12 w-auto object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-600 font-bold text-white shadow-md shadow-red-900/50">
+                    F
+                  </span>
+                  <span className="text-xl font-black tracking-tight text-white font-sans">
+                    FoodReview<span className="text-yellow-500">BD</span>
+                  </span>
+                </>
+              )}
             </div>
             <p className="text-sm leading-relaxed text-neutral-400">
               {settings.description || "The premier platform for authentic food reviews, trusted culinary suggestions, and exclusive restaurant discounts across Bangladesh. Handpicked and reviewed by food experts."}

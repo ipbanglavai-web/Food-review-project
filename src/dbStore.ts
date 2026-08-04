@@ -269,6 +269,8 @@ const INITIAL_STATE: LocalState = {
   settings: {
     desktopLogo: "",
     mobileLogo: "",
+    footerDesktopLogo: "",
+    footerMobileLogo: "",
     siteName: "Food Review Bangladesh",
     description: "The premier platform for authentic food reviews, trusted culinary suggestions, and exclusive restaurant discounts across Bangladesh. Handpicked and reviewed by food experts.",
     contactAddress: "Road 11, Banani Commercial Area, Dhaka - 1213, Bangladesh",

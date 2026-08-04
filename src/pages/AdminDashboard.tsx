@@ -146,6 +146,8 @@ export const AdminDashboard: React.FC = () => {
   // LOGO MANAGEMENT STATES
   const [desktopLogoInput, setDesktopLogoInput] = useState(settings.desktopLogo || '');
   const [mobileLogoInput, setMobileLogoInput] = useState(settings.mobileLogo || '');
+  const [footerDesktopLogoInput, setFooterDesktopLogoInput] = useState(settings.footerDesktopLogo || '');
+  const [footerMobileLogoInput, setFooterMobileLogoInput] = useState(settings.footerMobileLogo || '');
   const [logoSaveSuccess, setLogoSaveSuccess] = useState(false);
 
   // CONTACT & ABOUT US MANAGEMENT STATE
@@ -182,6 +184,8 @@ export const AdminDashboard: React.FC = () => {
     if (settings) {
       setDesktopLogoInput(settings.desktopLogo || '');
       setMobileLogoInput(settings.mobileLogo || '');
+      setFooterDesktopLogoInput(settings.footerDesktopLogo || '');
+      setFooterMobileLogoInput(settings.footerMobileLogo || '');
       setContactForm({
         contactAddress: settings.contactAddress || 'Road 11, Banani Commercial Area, Dhaka - 1213, Bangladesh',
         contactEmail: settings.contactEmail || 'support@foodreviewbd.com',
@@ -297,7 +301,9 @@ export const AdminDashboard: React.FC = () => {
       setIsSubmitting(true);
       await saveSettings({
         desktopLogo: desktopLogoInput,
-        mobileLogo: mobileLogoInput
+        mobileLogo: mobileLogoInput,
+        footerDesktopLogo: footerDesktopLogoInput,
+        footerMobileLogo: footerMobileLogoInput
       });
       setLogoSaveSuccess(true);
       setActionStatus({ type: 'success', message: 'Logo settings saved to Firestore successfully!' });
@@ -1073,6 +1079,28 @@ export const AdminDashboard: React.FC = () => {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">Footer Desktop Logo (Image URL)</label>
+                  <input
+                    type="url"
+                    placeholder="https://images.unsplash.com/photo-... or leave empty for default header/site logo"
+                    value={footerDesktopLogoInput}
+                    onChange={(e) => setFooterDesktopLogoInput(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2">Footer Mobile Logo (Image URL)</label>
+                  <input
+                    type="url"
+                    placeholder="https://images.unsplash.com/photo-... or leave empty for default"
+                    value={footerMobileLogoInput}
+                    onChange={(e) => setFooterMobileLogoInput(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
+                  />
+                </div>
+
                 <div className="flex gap-2">
                   <button
                     type="submit"
@@ -1085,6 +1113,8 @@ export const AdminDashboard: React.FC = () => {
                     onClick={() => {
                       setDesktopLogoInput('');
                       setMobileLogoInput('');
+                      setFooterDesktopLogoInput('');
+                      setFooterMobileLogoInput('');
                     }}
                     className="px-6 py-3 border border-neutral-200 dark:border-zinc-700 text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-neutral-50 dark:hover:bg-zinc-800 transition"
                   >
@@ -1096,17 +1126,29 @@ export const AdminDashboard: React.FC = () => {
               {/* Visual Logo Preview Area */}
               <div className="pt-6 border-t border-neutral-100/10">
                 <div className="text-xs font-bold text-neutral-400 uppercase mb-3">Live Brand Preview</div>
-                <div className="flex items-center gap-6 p-4 bg-neutral-50 dark:bg-zinc-800 rounded-2xl border border-neutral-100 dark:border-zinc-800">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-neutral-50 dark:bg-zinc-800 rounded-2xl border border-neutral-100 dark:border-zinc-800">
                   <div className="space-y-1">
-                    <div className="text-[10px] text-neutral-400 uppercase">Desktop Preview:</div>
+                    <div className="text-[10px] text-neutral-400 uppercase">Header Desktop Preview:</div>
                     <div className="font-extrabold text-neutral-800 dark:text-white flex items-center gap-1">
                       {desktopLogoInput ? <img src={desktopLogoInput} className="h-6 object-contain" alt="Logo preview" referrerPolicy="no-referrer" /> : 'FoodReviewBD'}
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-[10px] text-neutral-400 uppercase">Mobile Preview:</div>
+                    <div className="text-[10px] text-neutral-400 uppercase">Header Mobile Preview:</div>
                     <div className="font-extrabold text-neutral-800 dark:text-white flex items-center gap-1">
                       {mobileLogoInput ? <img src={mobileLogoInput} className="h-5 object-contain" alt="Logo preview" referrerPolicy="no-referrer" /> : 'F'}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-neutral-400 uppercase">Footer Desktop Preview:</div>
+                    <div className="font-extrabold text-neutral-800 dark:text-white flex items-center gap-1">
+                      {footerDesktopLogoInput ? <img src={footerDesktopLogoInput} className="h-6 object-contain" alt="Footer Logo preview" referrerPolicy="no-referrer" /> : 'FoodReviewBD'}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-neutral-400 uppercase">Footer Mobile Preview:</div>
+                    <div className="font-extrabold text-neutral-800 dark:text-white flex items-center gap-1">
+                      {footerMobileLogoInput ? <img src={footerMobileLogoInput} className="h-5 object-contain" alt="Footer Mobile Logo preview" referrerPolicy="no-referrer" /> : 'F'}
                     </div>
                   </div>
                 </div>
