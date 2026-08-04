@@ -3,9 +3,10 @@ import { HeroCarousel } from '../components/HeroCarousel';
 import { ReviewCard } from '../components/ReviewCard';
 import { OfferCard } from '../components/OfferCard';
 import { useApp } from '../context/AppContext';
-import { Search, Tag, X, Flame, Newspaper, Filter, ChevronLeft, ChevronRight, Award, Coffee, Pizza, AlertCircle } from 'lucide-react';
+import { Search, Tag, X, Flame, Newspaper, Filter, ChevronLeft, ChevronRight, Award, Coffee, Pizza, AlertCircle, MapPin } from 'lucide-react';
 import { Review, Offer } from '../types';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { isFuzzySearchMatch } from '../utils/search';
 
 interface HomeProps {
   searchOpen: boolean;
@@ -104,7 +105,7 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
     return reviews.filter((r) => !r.status || r.status === 'approved');
   }, [reviews]);
 
-  // Update real-time search matches when query changes
+  // Update real-time search matches when query changes with smart fuzzy & location logic
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchFilteredReviews([]);
@@ -112,25 +113,44 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
       return;
     }
 
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery.trim();
 
-    const matchedReviews = publicReviews.filter(
-      (r) =>
-        r.restaurantName.toLowerCase().includes(query) ||
-        r.foodCategory.toLowerCase().includes(query) ||
-        r.shortDescription.toLowerCase().includes(query) ||
-        r.location.toLowerCase().includes(query) ||
-        r.tags.some((tag) => tag.toLowerCase().includes(query))
+    // Matched Reviews: fuzzy search on restaurant, location, category, short/full description, and tags
+    const matchedReviews = publicReviews.filter((r) =>
+      isFuzzySearchMatch(query, [
+        r.restaurantName,
+        r.location,
+        r.foodCategory,
+        r.shortDescription,
+        r.description,
+        r.tags,
+        r.adminName
+      ])
     );
 
-    const matchedOffers = offers.filter(
-      (o) =>
-        o.restaurantName.toLowerCase().includes(query) ||
-        o.caption.toLowerCase().includes(query) ||
-        o.couponCode.toLowerCase().includes(query) ||
-        o.shortDescription.toLowerCase().includes(query) ||
-        o.category.toLowerCase().includes(query)
-    );
+    // Matched Offers: direct offer fields + cross-matching with restaurant location from reviews
+    const matchedOffers = offers.filter((o) => {
+      // 1. Direct offer field search (restaurant name, location, caption, coupon code, description, category)
+      const directMatch = isFuzzySearchMatch(query, [
+        o.restaurantName,
+        o.location,
+        o.caption,
+        o.couponCode,
+        o.shortDescription,
+        o.category
+      ]);
+
+      if (directMatch) return true;
+
+      // 2. Cross-match: if search query matches a review location for the same restaurant name
+      const matchingReviewByLocation = publicReviews.find(
+        (r) =>
+          r.restaurantName.toLowerCase().trim() === o.restaurantName.toLowerCase().trim() &&
+          isFuzzySearchMatch(query, [r.location])
+      );
+
+      return Boolean(matchingReviewByLocation);
+    });
 
     setSearchFilteredReviews(matchedReviews);
     setSearchFilteredOffers(matchedOffers);
@@ -365,7 +385,7 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
                 <input
                   type="text"
                   autoFocus
-                  placeholder="Search restaurant reviews, coupon codes, cuisines, locations..."
+                  placeholder="Search Mirpur, Dhanmondi, Chilox, Kacchi, Pizza, Coupon..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full text-neutral-800 placeholder-neutral-400 font-medium text-base focus:outline-none bg-transparent"
@@ -376,7 +396,7 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
                   setSearchOpen(false);
                   setSearchQuery('');
                 }}
-                className="rounded-full p-1.5 bg-neutral-50 hover:bg-neutral-100 text-neutral-500 transition cursor-pointer"
+                className="rounded-full p-1.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -385,14 +405,14 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
             {/* Live search results */}
             <div className="flex-1 overflow-y-auto mt-4 pr-1 space-y-6">
               {searchQuery.trim() === '' ? (
-                <div className="text-center py-12 space-y-3">
+                <div className="text-center py-10 space-y-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 mx-auto">
                     <Search size={22} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-neutral-800">What are you craving today?</p>
-                    <p className="text-xs text-neutral-400 max-w-sm mx-auto mt-1">
-                      Try searching for <code className="bg-neutral-100 px-1 py-0.5 rounded font-black">Kacchi</code>, <code className="bg-neutral-100 px-1 py-0.5 rounded font-black">Chillox</code>, or <code className="bg-neutral-100 px-1 py-0.5 rounded font-black">Pizza</code>!
+                    <p className="text-sm font-bold text-neutral-800">What are you craving or where are you located?</p>
+                    <p className="text-xs text-neutral-400 max-w-sm mx-auto mt-1 leading-relaxed">
+                      Search by location (e.g. <span className="bg-neutral-100 text-neutral-700 px-1.5 py-0.5 rounded font-bold">Mirpur</span>, <span className="bg-neutral-100 text-neutral-700 px-1.5 py-0.5 rounded font-bold">Uttara</span>), restaurant (e.g. <span className="bg-neutral-100 text-neutral-700 px-1.5 py-0.5 rounded font-bold">Chilox / Chillox</span>), or food item (<span className="bg-neutral-100 text-neutral-700 px-1.5 py-0.5 rounded font-bold">Kacchi</span>)!
                     </p>
                   </div>
                 </div>
@@ -427,8 +447,14 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
                                 <div className="text-sm font-bold text-neutral-900 group-hover:text-red-600 transition-colors">
                                   {rev.restaurantName}
                                 </div>
-                                <div className="text-xs text-neutral-500 line-clamp-1">
-                                  {rev.foodCategory} • {rev.location}
+                                <div className="text-xs text-neutral-500 flex items-center gap-2 mt-0.5 flex-wrap">
+                                  <span className="font-semibold text-neutral-600">{rev.foodCategory}</span>
+                                  {rev.location && (
+                                    <span className="inline-flex items-center gap-0.5 text-red-600/90 font-medium bg-red-50 px-1.5 py-0.2 rounded text-[11px]">
+                                      <MapPin size={10} />
+                                      {rev.location}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -442,40 +468,53 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
                   {/* OFFERS MATCHED */}
                   {searchFilteredOffers.length > 0 && (
                     <div className="space-y-3">
-                      <h4 className="text-xs font-black uppercase tracking-wider text-yellow-600 flex items-center gap-1">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-amber-600 flex items-center gap-1">
                         <Tag size={14} />
                         Discount Coupon Matches ({searchFilteredOffers.length})
                       </h4>
                       <div className="divide-y divide-neutral-100">
-                        {searchFilteredOffers.map((off) => (
-                          <div
-                            key={off.id}
-                            onClick={() => {
-                              setSearchOpen(false);
-                              setSearchQuery('');
-                              setActiveTab('offers');
-                            }}
-                            className="group flex items-center justify-between py-3 cursor-pointer hover:bg-neutral-50 px-2 rounded-xl transition"
-                          >
-                            <div className="flex items-center gap-3">
-                              <img
-                                src={off.thumbnail}
-                                alt={off.restaurantName}
-                                referrerPolicy="no-referrer"
-                                className="h-11 w-11 rounded-lg object-cover shrink-0"
-                              />
-                              <div>
-                                <div className="text-sm font-bold text-neutral-900 group-hover:text-yellow-600 transition-colors">
-                                  {off.restaurantName} - {off.discountPercentage}% OFF
-                                </div>
-                                <div className="text-xs text-neutral-500 line-clamp-1">
-                                  Use code <strong className="text-neutral-700 bg-neutral-100 px-1 rounded">{off.couponCode}</strong> • {off.caption}
+                        {searchFilteredOffers.map((off) => {
+                          // Find any matching review location for this offer's restaurant
+                          const matchingRev = publicReviews.find(
+                            (r) => r.restaurantName.toLowerCase().trim() === off.restaurantName.toLowerCase().trim() && r.location
+                          );
+
+                          return (
+                            <div
+                              key={off.id}
+                              onClick={() => {
+                                setSearchOpen(false);
+                                setSearchQuery('');
+                                setActiveTab('offers');
+                              }}
+                              className="group flex items-center justify-between py-3 cursor-pointer hover:bg-neutral-50 px-2 rounded-xl transition"
+                            >
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={off.thumbnail}
+                                  alt={off.restaurantName}
+                                  referrerPolicy="no-referrer"
+                                  className="h-11 w-11 rounded-lg object-cover shrink-0"
+                                />
+                                <div>
+                                  <div className="text-sm font-bold text-neutral-900 group-hover:text-amber-600 transition-colors">
+                                    {off.restaurantName} - <span className="text-amber-600">{off.discountPercentage}% OFF</span>
+                                  </div>
+                                  <div className="text-xs text-neutral-500 flex items-center gap-2 mt-0.5 flex-wrap">
+                                    <span>Code <strong className="text-neutral-800 bg-neutral-100 px-1 rounded">{off.couponCode}</strong></span>
+                                    {matchingRev && (
+                                      <span className="inline-flex items-center gap-0.5 text-amber-700 font-medium bg-amber-50 px-1.5 py-0.2 rounded text-[11px]">
+                                        <MapPin size={10} />
+                                        {matchingRev.location}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
+                              <ChevronRight size={16} className="text-neutral-400 group-hover:text-amber-600 transition-colors" />
                             </div>
-                            <ChevronRight size={16} className="text-neutral-400 group-hover:text-yellow-600 transition-colors" />
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}

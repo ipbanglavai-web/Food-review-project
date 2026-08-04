@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, Share2, Tag, Calendar, User } from 'lucide-react';
+import { Copy, Check, Share2, Tag, Calendar, User, MapPin } from 'lucide-react';
 import { Offer } from '../types';
 
 interface OfferCardProps {
@@ -85,9 +85,17 @@ export const OfferCard: React.FC<OfferCardProps> = ({ offer }) => {
           {/* Header row */}
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-[10px] font-bold tracking-wider text-red-600 uppercase bg-red-50 px-2 py-0.5 rounded">
-                {offer.category}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-bold tracking-wider text-red-600 uppercase bg-red-50 px-2 py-0.5 rounded">
+                  {offer.category}
+                </span>
+                {offer.location && (
+                  <span className="text-[10px] font-medium text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded flex items-center gap-1">
+                    <MapPin size={10} className="text-red-500" />
+                    {offer.location}
+                  </span>
+                )}
+              </div>
               <h3 className="text-xl font-extrabold text-neutral-900 mt-1.5 font-sans">
                 {offer.restaurantName}
               </h3>

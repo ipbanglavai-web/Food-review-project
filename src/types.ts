@@ -32,6 +32,7 @@ export interface Offer {
   discountPercentage: number;
   expiryDate: string; // YYYY-MM-DD
   category: string;
+  location?: string;
   featured: boolean;
   status: 'active' | 'inactive';
   adminName: string;
@@ -58,11 +59,16 @@ export interface Category {
 export interface Banner {
   id: string;
   imageUrl: string;
-  linkUrl: string;
-  title: string;
+  restaurantName?: string;
+  discount?: string;
+  code?: string;
+  tagline?: string;
+  minOrder?: string;
+  linkUrl?: string;
+  title?: string;
   subtitle?: string;
   description?: string;
-  order: number;
+  order?: number;
 }
 
 export interface AppSettings {

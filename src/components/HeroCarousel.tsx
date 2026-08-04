@@ -49,6 +49,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ banners }) => {
 
   useEffect(() => {
     if (N > 0) {
+      setIsTransitionEnabled(false);
       setActiveIndex(N);
     }
   }, [N]);
@@ -100,10 +101,10 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ banners }) => {
   useEffect(() => {
     if (!isTransitionEnabled) {
       // Force instant jump, then re-enable transition for subsequent moves
-      const frame = requestAnimationFrame(() => {
+      const timer = setTimeout(() => {
         setIsTransitionEnabled(true);
-      });
-      return () => cancelAnimationFrame(frame);
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [isTransitionEnabled]);
 
@@ -208,11 +209,15 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ banners }) => {
               transform: `translate3d(calc(-${activeIndex * slideWidthPercent}% + ${isDragging ? touchDeltaX : 0}px), 0, 0)`,
               transition: isDragging ? 'none' : isTransitionEnabled ? 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)' : 'none'
             }}
-            onTransitionEnd={handleAnimationComplete}
+            onTransitionEnd={(e) => {
+              if (e.target === e.currentTarget && e.propertyName === 'transform') {
+                handleAnimationComplete();
+              }
+            }}
             className="flex flex-row w-full overflow-visible will-change-transform"
           >
             {displayBanners.map((banner, index) => {
-              const isActive = index === activeIndex;
+              const isActive = (index % N) === activeDotIndex;
               return (
                 <div
                   key={`${banner.id}-${index}`}

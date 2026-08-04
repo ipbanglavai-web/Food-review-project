@@ -15,9 +15,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with auto-detect long polling for reliable web container connectivity
+// Initialize Firestore with forced long polling for reliable web container connectivity
 export const db = initializeFirestore(app, {
-  experimentalAutoDetectLongPolling: true,
+  experimentalForceLongPolling: true,
 });
 
 export const auth = getAuth(app);

@@ -119,10 +119,10 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ review, onLikeChanged })
       </div>
 
       {/* Card Content Details */}
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex-1 space-y-2">
+      <div className="flex flex-1 flex-col p-4">
+        <div className="flex-1 space-y-1">
           {/* Restaurant Title */}
-          <h3 className="text-lg font-extrabold text-neutral-900 group-hover:text-red-600 transition-colors line-clamp-1 font-sans">
+          <h3 className="text-base font-extrabold text-neutral-900 group-hover:text-red-600 transition-colors line-clamp-1 font-sans">
             {review.restaurantName}
           </h3>
 
@@ -133,13 +133,13 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ review, onLikeChanged })
           </p>
 
           {/* Short Description */}
-          <p className="text-sm text-neutral-600 leading-relaxed line-clamp-2 pt-1">
+          <p className="text-xs sm:text-sm text-neutral-600 leading-snug line-clamp-2 pt-0.5">
             {review.shortDescription}
           </p>
         </div>
 
         {/* Footer info: Admin, Views, Actions */}
-        <div className="mt-5 border-t border-neutral-100 pt-4 flex items-center justify-between">
+        <div className="mt-3 border-t border-neutral-100 pt-2.5 flex items-center justify-between">
           <div className="space-y-1">
             <div className="text-[10px] text-neutral-400 flex items-center gap-1">
               <Calendar size={10} />

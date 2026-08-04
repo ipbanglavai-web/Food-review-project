@@ -3,6 +3,7 @@ import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-d
 import { AppProvider } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import { TopRestaurantsSection } from './components/TopRestaurantsSection';
 import { Home } from './pages/Home';
 import { ReviewDetails } from './pages/ReviewDetails';
 import { Login } from './pages/Login';
@@ -62,8 +63,13 @@ const AppLayout: React.FC = () => {
         </Routes>
       </main>
 
-      {/* Show footer except on admin views */}
-      {!isAdminPage && !isLoginPage && <Footer />}
+      {/* Show top restaurants marquee and footer except on admin views */}
+      {!isAdminPage && !isLoginPage && (
+        <>
+          <TopRestaurantsSection />
+          <Footer />
+        </>
+      )}
     </div>
   );
 };

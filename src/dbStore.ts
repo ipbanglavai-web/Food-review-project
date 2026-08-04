@@ -29,30 +29,55 @@ const INITIAL_STATE: LocalState = {
   banners: [
     {
       id: "banner-1",
-      imageUrl: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?q=80&w=1600&h=900&fit=crop",
+      restaurantName: "কাচ্চি ভাই (Kacchi Bhai)",
+      discount: "20% OFF",
+      code: "KACCHI20",
+      tagline: "শাহী রাজকীয় কাচ্চি ধামাকা",
+      imageUrl: "https://images.unsplash.com/photo-1633945274405-b6c8069047b0?q=80&w=800&fit=crop",
       linkUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      title: "Sultan's Dine Legendary Kacchi Biriyani",
-      subtitle: "Authentic Old Dhaka Style Mutton Kacchi with Borhani",
-      description: "Experience the rich aroma of long-grain Basmati rice and melt-in-the-mouth mutton cooked to perfection.",
+      title: "কাচ্চি ভাই (Kacchi Bhai)",
+      subtitle: "শাহী রাজকীয় কাচ্চি ধামাকা",
+      description: "Kacchi Platters & Borhani",
       order: 1
     },
     {
       id: "banner-2",
-      imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1600&h=900&fit=crop",
+      restaurantName: "Chillox Burgers",
+      discount: "FLAT 50% OFF",
+      code: "CHILLOX50",
+      tagline: "জুসি & স্পাইসি স্ম্যাশ বার্গার",
+      imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800&fit=crop",
       linkUrl: "https://www.facebook.com",
-      title: "Chillox Ultimate Smoky Burgers",
-      subtitle: "Dhaka's Most Loved Gourmet Beef & Chicken Burgers",
-      description: "Juicy double patties loaded with melted cheese, caramelized onions and signature secret sauce.",
+      title: "Chillox Burgers",
+      subtitle: "জুসি & স্পাইসি স্ম্যাশ বার্গার",
+      description: "On Double & Triple Burgers",
       order: 2
     },
     {
       id: "banner-3",
-      imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1600&h=900&fit=crop",
+      restaurantName: "Pizza Hut Bangladesh",
+      discount: "BUY 1 GET 1 FREE",
+      code: "PIZZA2X",
+      tagline: "ফ্যামিলি পিৎজা ফেস্ট",
+      imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=800&fit=crop",
       linkUrl: "https://www.youtube.com",
-      title: "Woodfired Pizza Express",
-      subtitle: "Crispy, Cheesy & Hot Fresh Out of Italian Brick Oven",
-      description: "Hand-tossed thin crust pizzas topped with fresh mozzarella, basil and wood-smoked toppings.",
+      title: "Pizza Hut Bangladesh",
+      subtitle: "ফ্যামিলি পিৎজা ফেস্ট",
+      description: "Medium & Large Pan Pizza",
       order: 3
+    },
+    {
+      id: "banner-4",
+      restaurantName: "Secret Recipe",
+      discount: "25% DISCOUNT",
+      code: "", // Example without code
+      tagline: "সুইট ডিলাইটস & কফি",
+      imageUrl: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=800&fit=crop",
+      linkUrl: "https://www.facebook.com",
+      title: "Secret Recipe",
+      subtitle: "সুইট ডিলাইটস & কফি",
+      description: "All Signature Cakes & Coffee",
+      order: 4
     }
   ],
   categories: [
@@ -213,6 +238,7 @@ const INITIAL_STATE: LocalState = {
       discountPercentage: 15,
       expiryDate: "2026-12-31",
       category: "Best Biriyani",
+      location: "Dhanmondi, Uttara & Gulshan, Dhaka",
       featured: true,
       status: "active",
       adminName: "Abrar Chowdhury"
@@ -227,6 +253,7 @@ const INITIAL_STATE: LocalState = {
       discountPercentage: 50,
       expiryDate: "2026-09-30",
       category: "Burger",
+      location: "Banani, Mirpur, Uttara & Dhanmondi, Dhaka",
       featured: true,
       status: "active",
       adminName: "Nafis Kamal"
@@ -241,7 +268,23 @@ const INITIAL_STATE: LocalState = {
       discountPercentage: 20,
       expiryDate: "2026-10-15",
       category: "Pizza",
+      location: "Gulshan-2 & Uttara Branch, Dhaka",
       featured: false,
+      status: "active",
+      adminName: "Abrar Chowdhury"
+    },
+    {
+      id: "offer-4",
+      restaurantName: "Secret Recipe",
+      thumbnail: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=600&h=400&fit=crop",
+      caption: "Flat 20% Off on Signature Cakes & Coffee!",
+      couponCode: "UTTARA20",
+      shortDescription: "Special discount on Chocolate Indulgence and coffees for Uttara branch customers.",
+      discountPercentage: 20,
+      expiryDate: "2026-11-30",
+      category: "Dessert",
+      location: "Uttara Sector 3, Dhaka",
+      featured: true,
       status: "active",
       adminName: "Abrar Chowdhury"
     }
@@ -349,14 +392,25 @@ let cachedState: LocalState = (() => {
   return { ...INITIAL_STATE };
 })();
 
+function withTimeout<T>(promise: Promise<T>, ms: number = 3000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('Firestore operation timed out')), ms)
+    )
+  ]);
+}
+
 // Initialize data store from Firestore or LocalStorage
 export async function initializeStore(): Promise<void> {
   try {
-    // Attempt to seed first
-    await seedDatabase();
+    // Attempt to seed first with timeout
+    await withTimeout(seedDatabase(), 2500).catch((e) => {
+      console.warn("Database seed skipped or timed out:", e);
+    });
 
     // Fetch Banners
-    const bannersSnap = await getDocs(collection(db, 'banners'));
+    const bannersSnap = await withTimeout(getDocs(collection(db, 'banners')), 2500);
     if (!bannersSnap.empty) {
       cachedState.banners = bannersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Banner)).sort((a,b) => a.order - b.order);
     } else if (cachedState.banners.length === 0) {
@@ -364,7 +418,7 @@ export async function initializeStore(): Promise<void> {
     }
 
     // Fetch Categories
-    const categoriesSnap = await getDocs(collection(db, 'categories'));
+    const categoriesSnap = await withTimeout(getDocs(collection(db, 'categories')), 2500);
     if (!categoriesSnap.empty) {
       const cats = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
       const fallbackMap: Record<string, number> = {
@@ -392,7 +446,7 @@ export async function initializeStore(): Promise<void> {
     }
 
     // Fetch Reviews
-    const reviewsSnap = await getDocs(collection(db, 'reviews'));
+    const reviewsSnap = await withTimeout(getDocs(collection(db, 'reviews')), 2500);
     if (!reviewsSnap.empty) {
       const fetchedReviews = reviewsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
       cachedState.reviews = fetchedReviews.map(fRev => {
@@ -411,7 +465,7 @@ export async function initializeStore(): Promise<void> {
     }
 
     // Fetch Offers
-    const offersSnap = await getDocs(collection(db, 'offers'));
+    const offersSnap = await withTimeout(getDocs(collection(db, 'offers')), 2500);
     if (!offersSnap.empty) {
       cachedState.offers = offersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Offer));
     } else if (cachedState.offers.length === 0) {
@@ -419,7 +473,7 @@ export async function initializeStore(): Promise<void> {
     }
 
     // Fetch Moderators
-    const modsSnap = await getDocs(collection(db, 'moderators'));
+    const modsSnap = await withTimeout(getDocs(collection(db, 'moderators')), 2500);
     if (!modsSnap.empty) {
       cachedState.moderators = modsSnap.docs.map(doc => {
         const d = doc.data();
@@ -430,7 +484,7 @@ export async function initializeStore(): Promise<void> {
     }
 
     // Fetch Settings
-    const settingsDoc = await getDoc(doc(db, 'settings', 'app'));
+    const settingsDoc = await withTimeout(getDoc(doc(db, 'settings', 'app')), 2500);
     if (settingsDoc.exists()) {
       const serverSettings = settingsDoc.data() as AppSettings;
       cachedState.settings = {
@@ -448,7 +502,7 @@ export async function initializeStore(): Promise<void> {
 
     // Fetch Messages
     try {
-      const msgsSnap = await getDocs(collection(db, 'messages'));
+      const msgsSnap = await withTimeout(getDocs(collection(db, 'messages')), 2500);
       if (!msgsSnap.empty) {
         cachedState.messages = msgsSnap.docs
           .map(doc => ({ id: doc.id, ...doc.data() } as ContactMessage))

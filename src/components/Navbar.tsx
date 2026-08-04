@@ -168,7 +168,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection 
 
           {/* Content Panel */}
           <div className="relative z-10 flex w-4/5 max-w-sm flex-col bg-white p-6 shadow-2xl h-full transform transition-transform duration-300 ease-in-out">
-            <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
+            <div className="flex items-center justify-between border-b border-neutral-200 pb-4 mb-2">
               <Link to="/" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-2">
                 {drawerLogo && !drawerLogoError ? (
                   <img
