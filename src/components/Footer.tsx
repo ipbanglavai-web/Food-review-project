@@ -107,9 +107,17 @@ export const Footer: React.FC = () => {
 
         {/* Footer Bottom */}
         <div className="flex flex-col sm:flex-row items-center justify-between pt-8 text-xs text-neutral-500">
-          <p>© {new Date().getFullYear()} Food Review Bangladesh. All Rights Reserved.</p>
+          <p>{settings.copyrightText || `© ${new Date().getFullYear()} Food Review Bangladesh. All Rights Reserved.`}</p>
           <p className="mt-2 sm:mt-0">
-            Developed with ❤️ by <span className="text-neutral-300 font-bold hover:text-red-500 transition-colors cursor-pointer">Premium Dev Studio BD</span>
+            Developed with ❤️ by{' '}
+            <a
+              href={settings.developerUrl || "https://itologybd.com"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-neutral-300 font-bold hover:text-red-500 transition-colors cursor-pointer"
+            >
+              {settings.developerName || "ITology"}
+            </a>
           </p>
         </div>
       </div>

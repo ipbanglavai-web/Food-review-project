@@ -91,6 +91,11 @@ export interface AppSettings {
   aboutStoryTitle?: string;
   aboutStoryParagraph1?: string;
   aboutStoryParagraph2?: string;
+
+  // Footer & Developer Details
+  copyrightText?: string;
+  developerName?: string;
+  developerUrl?: string;
 }
 
 export interface ContactMessage {

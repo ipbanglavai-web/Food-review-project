@@ -171,7 +171,11 @@ export const AdminDashboard: React.FC = () => {
     aboutCard3Desc: settings.aboutCard3Desc || 'From Old Dhaka\'s traditional Kacchi Biriyani to Banani\'s gourmet burgers, we cover everything.',
     aboutStoryTitle: settings.aboutStoryTitle || 'Our Culinary Journey',
     aboutStoryParagraph1: settings.aboutStoryParagraph1 || 'Food Review Bangladesh started as a small group of passionate food critics in Dhaka. Realizing there was no single resource compiling both detailed text write-ups, video walkthroughs, and verified discount coupons in a beautiful visual interface, we built this premium restaurant platform.',
-    aboutStoryParagraph2: settings.aboutStoryParagraph2 || 'Today, our platform has verified over 150 restaurants, saved users hundreds of thousands of BDT in discount coupon redemptions, and expanded to represent cities beyond Dhaka, including Chittagong, Sylhet, and Rajshahi.'
+    aboutStoryParagraph2: settings.aboutStoryParagraph2 || 'Today, our platform has verified over 150 restaurants, saved users hundreds of thousands of BDT in discount coupon redemptions, and expanded to represent cities beyond Dhaka, including Chittagong, Sylhet, and Rajshahi.',
+
+    copyrightText: settings.copyrightText || '© 2026 Food Review Bangladesh. All Rights Reserved.',
+    developerName: settings.developerName || 'ITology',
+    developerUrl: settings.developerUrl || 'https://itologybd.com'
   });
 
   useEffect(() => {
@@ -199,7 +203,11 @@ export const AdminDashboard: React.FC = () => {
         aboutCard3Desc: settings.aboutCard3Desc || 'From Old Dhaka\'s traditional Kacchi Biriyani to Banani\'s gourmet burgers, we cover everything.',
         aboutStoryTitle: settings.aboutStoryTitle || 'Our Culinary Journey',
         aboutStoryParagraph1: settings.aboutStoryParagraph1 || 'Food Review Bangladesh started as a small group of passionate food critics in Dhaka. Realizing there was no single resource compiling both detailed text write-ups, video walkthroughs, and verified discount coupons in a beautiful visual interface, we built this premium restaurant platform.',
-        aboutStoryParagraph2: settings.aboutStoryParagraph2 || 'Today, our platform has verified over 150 restaurants, saved users hundreds of thousands of BDT in discount coupon redemptions, and expanded to represent cities beyond Dhaka, including Chittagong, Sylhet, and Rajshahi.'
+        aboutStoryParagraph2: settings.aboutStoryParagraph2 || 'Today, our platform has verified over 150 restaurants, saved users hundreds of thousands of BDT in discount coupon redemptions, and expanded to represent cities beyond Dhaka, including Chittagong, Sylhet, and Rajshahi.',
+
+        copyrightText: settings.copyrightText || '© 2026 Food Review Bangladesh. All Rights Reserved.',
+        developerName: settings.developerName || 'ITology',
+        developerUrl: settings.developerUrl || 'https://itologybd.com'
       });
     }
   }, [settings]);
@@ -330,7 +338,11 @@ export const AdminDashboard: React.FC = () => {
         aboutCard3Desc: contactForm.aboutCard3Desc,
         aboutStoryTitle: contactForm.aboutStoryTitle,
         aboutStoryParagraph1: contactForm.aboutStoryParagraph1,
-        aboutStoryParagraph2: contactForm.aboutStoryParagraph2
+        aboutStoryParagraph2: contactForm.aboutStoryParagraph2,
+
+        copyrightText: contactForm.copyrightText,
+        developerName: contactForm.developerName,
+        developerUrl: contactForm.developerUrl
       });
       setActionStatus({ type: 'success', message: 'About Us page & Contact details saved to Firestore successfully!' });
       setTimeout(() => {
@@ -1448,6 +1460,48 @@ export const AdminDashboard: React.FC = () => {
                         darkMode ? 'bg-zinc-800 text-zinc-100 border border-zinc-700' : 'bg-white text-neutral-900 border border-neutral-200'
                       }`}
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
+                    <div>
+                      <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${darkMode ? 'text-zinc-400' : 'text-neutral-600'}`}>
+                        Copyright Text
+                      </label>
+                      <input
+                        type="text"
+                        value={contactForm.copyrightText}
+                        onChange={(e) => setContactForm({ ...contactForm, copyrightText: e.target.value })}
+                        className={`w-full px-4 py-2.5 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs ${
+                          darkMode ? 'bg-zinc-800 text-zinc-100 border border-zinc-700' : 'bg-white text-neutral-900 border border-neutral-200'
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${darkMode ? 'text-zinc-400' : 'text-neutral-600'}`}>
+                        Developer Name
+                      </label>
+                      <input
+                        type="text"
+                        value={contactForm.developerName}
+                        onChange={(e) => setContactForm({ ...contactForm, developerName: e.target.value })}
+                        className={`w-full px-4 py-2.5 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs ${
+                          darkMode ? 'bg-zinc-800 text-zinc-100 border border-zinc-700' : 'bg-white text-neutral-900 border border-neutral-200'
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${darkMode ? 'text-zinc-400' : 'text-neutral-600'}`}>
+                        Developer Website URL
+                      </label>
+                      <input
+                        type="url"
+                        value={contactForm.developerUrl}
+                        onChange={(e) => setContactForm({ ...contactForm, developerUrl: e.target.value })}
+                        className={`w-full px-4 py-2.5 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs ${
+                          darkMode ? 'bg-zinc-800 text-zinc-100 border border-zinc-700' : 'bg-white text-neutral-900 border border-neutral-200'
+                        }`}
+                      />
+                    </div>
                   </div>
                 </div>
 

@@ -291,7 +291,11 @@ const INITIAL_STATE: LocalState = {
     aboutCard3Desc: "From Old Dhaka's traditional Kacchi Biriyani to Banani's gourmet burgers, we cover everything.",
     aboutStoryTitle: "Our Culinary Journey",
     aboutStoryParagraph1: "Food Review Bangladesh started as a small group of passionate food critics in Dhaka. Realizing there was no single resource compiling both detailed text write-ups, video walkthroughs, and verified discount coupons in a beautiful visual interface, we built this premium restaurant platform.",
-    aboutStoryParagraph2: "Today, our platform has verified over 150 restaurants, saved users hundreds of thousands of BDT in discount coupon redemptions, and expanded to represent cities beyond Dhaka, including Chittagong, Sylhet, and Rajshahi."
+    aboutStoryParagraph2: "Today, our platform has verified over 150 restaurants, saved users hundreds of thousands of BDT in discount coupon redemptions, and expanded to represent cities beyond Dhaka, including Chittagong, Sylhet, and Rajshahi.",
+
+    copyrightText: "© 2026 Food Review Bangladesh. All Rights Reserved.",
+    developerName: "ITology",
+    developerUrl: "https://itologybd.com"
   },
   messages: [
     {
