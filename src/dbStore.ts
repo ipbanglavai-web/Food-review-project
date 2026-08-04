@@ -367,10 +367,30 @@ export async function initializeStore(): Promise<void> {
       cachedState.categories = [...INITIAL_STATE.categories];
     }
 
+    // Load existing local cache first if available
+    const localRaw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    let localCache: LocalState | null = null;
+    if (localRaw) {
+      try {
+        localCache = JSON.parse(localRaw);
+      } catch (e) {}
+    }
+
     // Fetch Reviews
     const reviewsSnap = await getDocs(collection(db, 'reviews'));
     if (!reviewsSnap.empty) {
-      cachedState.reviews = reviewsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+      const fetchedReviews = reviewsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+      cachedState.reviews = fetchedReviews.map(fRev => {
+        const localRev = localCache?.reviews?.find(r => r.id === fRev.id);
+        if (localRev) {
+          return {
+            ...fRev,
+            likes: Math.max(fRev.likes || 0, localRev.likes || 0),
+            views: Math.max(fRev.views || 0, localRev.views || 0),
+          };
+        }
+        return fRev;
+      });
     } else if (cachedState.reviews.length === 0) {
       cachedState.reviews = [...INITIAL_STATE.reviews];
     }
@@ -465,35 +485,33 @@ export function getSettings(): AppSettings {
   return cachedState.settings;
 }
 
-// VIEWS & LIKES LOGIC WITH DEVICE CHECKING
+// VIEWS & LIKES LOGIC
 export async function incrementReviewViews(id: string): Promise<number> {
   const viewedKey = `viewed_review_${id}`;
-  if (localStorage.getItem(viewedKey)) {
-    // Already viewed in this browser, return cached count
-    const rev = cachedState.reviews.find(r => r.id === id);
-    return rev ? rev.views : 0;
+  const alreadyViewed = localStorage.getItem(viewedKey) === 'true';
+
+  const revIndex = cachedState.reviews.findIndex(r => r.id === id);
+  if (revIndex === -1) return 0;
+
+  if (alreadyViewed) {
+    return cachedState.reviews[revIndex].views;
   }
 
-  // Set viewed flag
   localStorage.setItem(viewedKey, 'true');
 
   // Update in state
-  const revIndex = cachedState.reviews.findIndex(r => r.id === id);
-  if (revIndex !== -1) {
-    cachedState.reviews[revIndex].views += 1;
-    saveLocalCache();
+  cachedState.reviews[revIndex].views += 1;
+  saveLocalCache();
 
-    // Async write to Firebase
-    try {
-      await updateDoc(doc(db, 'reviews', id), {
-        views: increment(1)
-      });
-    } catch (e) {
-      console.warn("Could not increment view in firestore:", e);
-    }
-    return cachedState.reviews[revIndex].views;
+  // Async write to Firebase
+  try {
+    await updateDoc(doc(db, 'reviews', id), {
+      views: increment(1)
+    });
+  } catch (e) {
+    console.warn("Could not increment view in firestore:", e);
   }
-  return 0;
+  return cachedState.reviews[revIndex].views;
 }
 
 export async function toggleReviewLike(id: string): Promise<{ liked: boolean; likes: number }> {
