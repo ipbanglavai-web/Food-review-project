@@ -11,8 +11,19 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection }) => {
   const { currentUser, logout, settings } = useApp();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [headerLogoError, setHeaderLogoError] = useState(false);
+  const [drawerLogoError, setDrawerLogoError] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const headerLogo = settings.desktopLogo?.trim() || settings.mobileLogo?.trim();
+  const drawerLogo = settings.mobileLogo?.trim() || settings.desktopLogo?.trim();
+
+  // Reset image load errors when settings change
+  React.useEffect(() => {
+    setHeaderLogoError(false);
+    setDrawerLogoError(false);
+  }, [settings.desktopLogo, settings.mobileLogo]);
 
   const menuItems = [
     { name: 'Home', path: '/', section: 'hero' },
@@ -47,12 +58,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection 
           {/* Left: Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2">
-              {settings.desktopLogo ? (
+              {headerLogo && !headerLogoError ? (
                 <img
-                  src={settings.desktopLogo}
-                  alt="Food Review BD"
-                  className="h-10 max-h-12 w-auto object-contain"
+                  src={headerLogo}
+                  alt={settings.siteName || "Food Review BD"}
+                  className="h-10 max-h-12 max-w-[200px] w-auto object-contain"
                   referrerPolicy="no-referrer"
+                  onError={() => setHeaderLogoError(true)}
                 />
               ) : (
                 <>
@@ -157,13 +169,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection 
           {/* Content Panel */}
           <div className="relative z-10 flex w-4/5 max-w-sm flex-col bg-white p-6 shadow-2xl h-full transform transition-transform duration-300 ease-in-out">
             <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-              <div className="flex items-center gap-2">
-                {settings.mobileLogo || settings.desktopLogo ? (
+              <Link to="/" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-2">
+                {drawerLogo && !drawerLogoError ? (
                   <img
-                    src={settings.mobileLogo || settings.desktopLogo}
-                    alt="Food Review BD"
-                    className="h-9 max-h-10 w-auto object-contain"
+                    src={drawerLogo}
+                    alt={settings.siteName || "Food Review BD"}
+                    className="h-9 max-h-11 max-w-[180px] w-auto object-contain"
                     referrerPolicy="no-referrer"
+                    onError={() => setDrawerLogoError(true)}
                   />
                 ) : (
                   <>
@@ -175,7 +188,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSearchOpen, onScrollToSection 
                     </span>
                   </>
                 )}
-              </div>
+              </Link>
               <button
                 onClick={() => setIsDrawerOpen(false)}
                 className="rounded-full p-2 hover:bg-red-50 transition"
