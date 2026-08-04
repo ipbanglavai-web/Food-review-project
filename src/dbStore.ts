@@ -333,8 +333,21 @@ const INITIAL_STATE: LocalState = {
   ]
 };
 
-// Global cache in memory
-let cachedState: LocalState = { ...INITIAL_STATE };
+// Global cache in memory initialized from localStorage immediately
+let cachedState: LocalState = (() => {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        ...INITIAL_STATE,
+        ...parsed,
+        settings: { ...INITIAL_STATE.settings, ...(parsed.settings || {}) }
+      };
+    }
+  } catch (e) {}
+  return { ...INITIAL_STATE };
+})();
 
 // Initialize data store from Firestore or LocalStorage
 export async function initializeStore(): Promise<void> {
@@ -419,7 +432,18 @@ export async function initializeStore(): Promise<void> {
     // Fetch Settings
     const settingsDoc = await getDoc(doc(db, 'settings', 'app'));
     if (settingsDoc.exists()) {
-      cachedState.settings = settingsDoc.data() as AppSettings;
+      const serverSettings = settingsDoc.data() as AppSettings;
+      cachedState.settings = {
+        ...INITIAL_STATE.settings,
+        ...(localCache?.settings || {}),
+        ...serverSettings,
+        desktopLogo: serverSettings.desktopLogo || localCache?.settings?.desktopLogo || INITIAL_STATE.settings.desktopLogo,
+        mobileLogo: serverSettings.mobileLogo || localCache?.settings?.mobileLogo || INITIAL_STATE.settings.mobileLogo,
+        footerDesktopLogo: serverSettings.footerDesktopLogo || localCache?.settings?.footerDesktopLogo || INITIAL_STATE.settings.footerDesktopLogo,
+        footerMobileLogo: serverSettings.footerMobileLogo || localCache?.settings?.footerMobileLogo || INITIAL_STATE.settings.footerMobileLogo,
+      };
+    } else if (localCache?.settings) {
+      cachedState.settings = { ...INITIAL_STATE.settings, ...localCache.settings };
     }
 
     // Fetch Messages
@@ -578,7 +602,7 @@ export async function saveAppSettings(settings: Partial<AppSettings>): Promise<A
   cachedState.settings = { ...cachedState.settings, ...settings };
   saveLocalCache();
   try {
-    await setDoc(doc(db, 'settings', 'app'), cleanData(cachedState.settings));
+    await setDoc(doc(db, 'settings', 'app'), cleanData(cachedState.settings), { merge: true });
   } catch (e) {
     console.error("Could not save settings to firestore:", e);
     throw e;
