@@ -274,7 +274,8 @@ const DEFAULT_SETTINGS = {
 // Seed function to initialize Firestore collections
 export async function seedDatabase() {
   try {
-    // Check and seed banners
+    // Check and seed banners (Disabled to ensure a clean slate on production cPanel hosting)
+    /*
     const bannersSnap = await getDocs(collection(db, 'banners'));
     if (bannersSnap.empty) {
       console.log("Seeding banners...");
@@ -282,6 +283,7 @@ export async function seedDatabase() {
         await setDoc(doc(db, 'banners', banner.id), banner);
       }
     }
+    */
 
     // Check and seed categories
     const categoriesSnap = await getDocs(collection(db, 'categories'));

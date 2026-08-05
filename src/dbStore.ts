@@ -26,60 +26,7 @@ interface LocalState {
 
 // Initial default state for local fallback and cache
 const INITIAL_STATE: LocalState = {
-  banners: [
-    {
-      id: "banner-1",
-      restaurantName: "কাচ্চি ভাই (Kacchi Bhai)",
-      discount: "20% OFF",
-      code: "KACCHI20",
-      tagline: "শাহী রাজকীয় কাচ্চি ধামাকা",
-      imageUrl: "https://images.unsplash.com/photo-1633945274405-b6c8069047b0?q=80&w=800&fit=crop",
-      linkUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      title: "কাচ্চি ভাই (Kacchi Bhai)",
-      subtitle: "শাহী রাজকীয় কাচ্চি ধামাকা",
-      description: "Kacchi Platters & Borhani",
-      order: 1
-    },
-    {
-      id: "banner-2",
-      restaurantName: "Chillox Burgers",
-      discount: "FLAT 50% OFF",
-      code: "CHILLOX50",
-      tagline: "জুসি & স্পাইসি স্ম্যাশ বার্গার",
-      imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800&fit=crop",
-      linkUrl: "https://www.facebook.com",
-      title: "Chillox Burgers",
-      subtitle: "জুসি & স্পাইসি স্ম্যাশ বার্গার",
-      description: "On Double & Triple Burgers",
-      order: 2
-    },
-    {
-      id: "banner-3",
-      restaurantName: "Pizza Hut Bangladesh",
-      discount: "BUY 1 GET 1 FREE",
-      code: "PIZZA2X",
-      tagline: "ফ্যামিলি পিৎজা ফেস্ট",
-      imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=800&fit=crop",
-      linkUrl: "https://www.youtube.com",
-      title: "Pizza Hut Bangladesh",
-      subtitle: "ফ্যামিলি পিৎজা ফেস্ট",
-      description: "Medium & Large Pan Pizza",
-      order: 3
-    },
-    {
-      id: "banner-4",
-      restaurantName: "Secret Recipe",
-      discount: "25% DISCOUNT",
-      code: "", // Example without code
-      tagline: "সুইট ডিলাইটস & কফি",
-      imageUrl: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=800&fit=crop",
-      linkUrl: "https://www.facebook.com",
-      title: "Secret Recipe",
-      subtitle: "সুইট ডিলাইটস & কফি",
-      description: "All Signature Cakes & Coffee",
-      order: 4
-    }
-  ],
+  banners: [],
   categories: [
     { id: "cat-biriyani", name: "Best Biriyani", type: "food", order: 1 },
     { id: "cat-fastfood", name: "Fast Food", type: "food", order: 2 },

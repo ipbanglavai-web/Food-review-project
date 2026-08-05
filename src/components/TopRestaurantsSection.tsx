@@ -21,46 +21,6 @@ export const TopRestaurantsSection: React.FC = () => {
     setTimeout(() => setCopiedCode(null), 2500);
   };
 
-  // High quality JPG style restaurant voucher banners fallback
-  const staticBanners = [
-    {
-      id: 'banner-kacchi-bhai',
-      restaurantName: 'কাচ্চি ভাই (Kacchi Bhai)',
-      image: 'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?auto=format&fit=crop&w=800&q=80',
-      discount: '20% OFF',
-      tagline: 'শাহী রাজকীয় কাচ্চি ধামাকা',
-      code: 'KACCHI20',
-      minOrder: 'Kacchi Platters & Borhani',
-    },
-    {
-      id: 'banner-chillox',
-      restaurantName: 'Chillox Burgers',
-      image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80',
-      discount: 'FLAT 50% OFF',
-      tagline: 'জুসি & স্পাইসি স্ম্যাশ বার্গার',
-      code: 'CHILLOX50',
-      minOrder: 'On Double & Triple Burgers',
-    },
-    {
-      id: 'banner-pizza-hut',
-      restaurantName: 'Pizza Hut Bangladesh',
-      image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80',
-      discount: 'BUY 1 GET 1 FREE',
-      tagline: 'ফ্যামিলি পিৎজা ফেস্ট',
-      code: 'PIZZA2X',
-      minOrder: 'Medium & Large Pan Pizza',
-    },
-    {
-      id: 'banner-secret-recipe',
-      restaurantName: 'Secret Recipe',
-      image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80',
-      discount: '25% DISCOUNT',
-      tagline: 'সুইট ডিলাইটস & কফি',
-      code: '',
-      minOrder: 'All Signature Cakes & Coffee',
-    },
-  ];
-
   // Dynamic banners created by admin from Firestore/context
   const adminBanners = banners.map((b) => ({
     id: b.id,
@@ -72,7 +32,7 @@ export const TopRestaurantsSection: React.FC = () => {
     minOrder: b.minOrder || b.description || '',
   }));
 
-  const activeBanners = adminBanners.length > 0 ? adminBanners : staticBanners;
+  const activeBanners = adminBanners;
 
   // Dynamic offers from app context converted to banner cards
   const dynamicOfferCards = offers.map((off) => ({
@@ -86,6 +46,12 @@ export const TopRestaurantsSection: React.FC = () => {
   }));
 
   const allCards = [...activeBanners, ...dynamicOfferCards];
+
+  // If there are absolutely no banners or offers, hide the section
+  if (allCards.length === 0) {
+    return null;
+  }
+
   // Triple the array for smooth infinite marquee looping
   const infiniteCards = [...allCards, ...allCards, ...allCards];
 
@@ -96,14 +62,16 @@ export const TopRestaurantsSection: React.FC = () => {
     const scrollStep = () => {
       if (scrollRef.current && !isInteracting && !isMouseDown) {
         const container = scrollRef.current;
-        container.scrollLeft += 0.8;
+        container.scrollLeft += 0.7;
 
-        // Loop seamlessly back when reaching end of 1/3 of content
+        // Seamless loop wrap when reaching 2/3 of triple content
         const maxScroll = container.scrollWidth / 3;
-        if (container.scrollLeft >= maxScroll * 2) {
-          container.scrollLeft = maxScroll;
-        } else if (container.scrollLeft <= 0) {
-          container.scrollLeft = maxScroll;
+        if (maxScroll > 0) {
+          if (container.scrollLeft >= maxScroll * 2) {
+            container.scrollLeft -= maxScroll;
+          } else if (container.scrollLeft <= 5) {
+            container.scrollLeft += maxScroll;
+          }
         }
       }
       animId = requestAnimationFrame(scrollStep);
@@ -113,12 +81,26 @@ export const TopRestaurantsSection: React.FC = () => {
     return () => cancelAnimationFrame(animId);
   }, [isInteracting, isMouseDown]);
 
-  // Set initial scroll position to middle third
+  // Set initial scroll position smoothly after layout is measured
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth / 3;
-    }
-  }, []);
+    const alignScroll = () => {
+      if (scrollRef.current) {
+        const container = scrollRef.current;
+        const maxScroll = container.scrollWidth / 3;
+        if (maxScroll > 0 && (container.scrollLeft <= 10 || container.scrollLeft >= maxScroll * 2.5)) {
+          container.scrollLeft = maxScroll;
+        }
+      }
+    };
+
+    alignScroll();
+    const t1 = setTimeout(alignScroll, 100);
+    const t2 = setTimeout(alignScroll, 500);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [allCards.length]);
 
   // Mouse drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -156,7 +138,7 @@ export const TopRestaurantsSection: React.FC = () => {
     if (touchTimeoutRef.current) clearTimeout(touchTimeoutRef.current);
     touchTimeoutRef.current = setTimeout(() => {
       setIsInteracting(false);
-    }, 2000); // Resume auto scroll 2 seconds after user stops touching/dragging
+    }, 1500); // Smoothly resume auto scroll 1.5s after touch/drag release
   };
 
   return (
@@ -178,42 +160,36 @@ export const TopRestaurantsSection: React.FC = () => {
         onMouseLeave={handleMouseLeaveOrUp}
         onMouseUp={handleMouseLeaveOrUp}
         onMouseMove={handleMouseMove}
-        onMouseEnter={() => setIsInteracting(true)}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         className="w-full overflow-x-auto no-scrollbar py-2 select-none cursor-grab active:cursor-grabbing px-4 sm:px-6 lg:px-8"
-        style={{ scrollBehavior: isMouseDown ? 'auto' : 'smooth' }}
       >
         <div className="flex gap-5 items-stretch w-max">
           {infiniteCards.map((card, idx) => (
             <div
               key={`${card.id}-${idx}`}
-              className="shrink-0 w-[280px] sm:w-[320px] h-[200px] relative text-white rounded-2xl p-3.5 flex flex-col justify-between overflow-hidden border-2 border-red-500/60 hover:border-red-500 shadow-xl group cursor-pointer bg-neutral-900 transition-transform duration-300 hover:scale-[1.02]"
+              className="shrink-0 w-[280px] sm:w-[320px] h-[200px] relative text-white rounded-2xl p-3.5 flex flex-col justify-between overflow-hidden border-4 border-red-600/90 hover:border-red-500 shadow-2xl group cursor-pointer bg-neutral-900 transition-transform duration-300 hover:scale-[1.02]"
             >
-              {/* 100% Clear Crisp JPG Background Image */}
+              {/* 100% Clear Crisp JPG Background Image with zero dark overlay */}
               <img
                 src={card.image}
                 alt={card.restaurantName}
                 className="absolute inset-0 w-full h-full object-cover opacity-100 group-hover:scale-105 transition-transform duration-500 pointer-events-none"
               />
 
-              {/* Light gradient strictly at top and bottom to ensure text readability while leaving center food 100% clear */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/10 to-black/85 pointer-events-none" />
-
-              {/* TOP LEFT: Restaurant Name in White with Black Shadow Glow + Yellow Discount below */}
+              {/* TOP LEFT: Restaurant Name in White + Yellow Discount below */}
               <div className="z-10 flex items-start justify-between w-full">
-                <div className="text-left pr-2 bg-black/40 backdrop-blur-xs px-2.5 py-1 rounded-xl border border-white/10">
-                  <div className="text-sm sm:text-base font-black text-white leading-tight tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,1)] font-sans flex items-center gap-1.5">
-                    <Sparkles size={14} className="text-yellow-400 shrink-0" />
+                <div className="text-left pr-2 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-lg">
+                  <div className="text-sm sm:text-base font-black text-white leading-tight tracking-wide font-sans">
                     <span className="line-clamp-1">{card.restaurantName}</span>
                   </div>
-                  {/* Discount Number in Yellow with Black Shadow Glow */}
-                  <div className="text-xl sm:text-2xl font-black text-yellow-400 leading-none mt-0.5 tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">
+                  {/* Discount Number in Yellow */}
+                  <div className="text-xl sm:text-2xl font-black text-yellow-400 leading-none mt-0.5 tracking-tight">
                     {card.discount}
                   </div>
                 </div>
 
-                <span className="bg-red-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider border border-red-400/50 shadow-lg shrink-0 drop-shadow-md">
+                <span className="bg-red-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider border border-red-400/50 shadow-lg shrink-0">
                   TOP DEAL
                 </span>
               </div>
