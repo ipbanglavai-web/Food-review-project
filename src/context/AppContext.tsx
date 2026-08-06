@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   initializeStore, 
+  subscribeToStore,
   getReviews, 
   getOffers, 
   getCategories, 
@@ -82,33 +83,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const refreshMessages = () => setMessages([...getMessages()]);
 
-  // Load state on mount
+  // Load state on mount & subscribe to live updates
   useEffect(() => {
-    async function loadData() {
-      try {
-        await initializeStore();
-        setReviews(getReviews());
-        setOffers(getOffers());
-        setCategories(getCategories());
-        setBanners(getBanners());
-        setSettings(getSettings());
-        setModerators(getModerators());
-        setMessages(getMessages());
+    const syncState = () => {
+      setReviews(getReviews());
+      setOffers(getOffers());
+      setCategories(getCategories());
+      setBanners(getBanners());
+      setSettings(getSettings());
+      setModerators(getModerators());
+      setMessages(getMessages());
+    };
 
-        // Restore user session if saved
-        const storedUser = localStorage.getItem('food_review_bd_session');
-        if (storedUser) {
-          try {
-            setCurrentUser(JSON.parse(storedUser));
-          } catch (_) {}
-        }
-      } catch (e) {
-        console.error("Data load failed in React context:", e);
-      } finally {
-        setLoading(false);
-      }
+    // Synchronize initial state from cached storage immediately (0ms instant render)
+    syncState();
+
+    // Subscribe to real-time changes
+    const unsubscribe = subscribeToStore(() => {
+      syncState();
+      setLoading(false);
+    });
+
+    // Restore user session if saved
+    const storedUser = localStorage.getItem('food_review_bd_session');
+    if (storedUser) {
+      try {
+        setCurrentUser(JSON.parse(storedUser));
+      } catch (_) {}
     }
-    loadData();
+
+    // Run background store initialization and listeners
+    initializeStore().finally(() => {
+      syncState();
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // Authentication

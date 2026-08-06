@@ -6,7 +6,8 @@ import {
   setDoc, 
   deleteDoc, 
   updateDoc, 
-  increment 
+  increment,
+  onSnapshot
 } from 'firebase/firestore';
 import { db, seedDatabase } from './firebase';
 import { Review, Offer, Moderator, Category, Banner, AppSettings, ContactMessage } from './types';
@@ -339,6 +340,28 @@ let cachedState: LocalState = (() => {
   return { ...INITIAL_STATE };
 })();
 
+// Store subscription system for instant live updates across components & devices
+type StoreSubscriber = () => void;
+const storeSubscribers: Set<StoreSubscriber> = new Set();
+
+export function subscribeToStore(subscriber: StoreSubscriber): () => void {
+  storeSubscribers.add(subscriber);
+  return () => {
+    storeSubscribers.delete(subscriber);
+  };
+}
+
+function notifySubscribers() {
+  saveLocalCache();
+  storeSubscribers.forEach((fn) => {
+    try {
+      fn();
+    } catch (e) {
+      console.error("Error in store subscriber:", e);
+    }
+  });
+}
+
 function withTimeout<T>(promise: Promise<T>, ms: number = 3000): Promise<T> {
   return Promise.race([
     promise,
@@ -348,26 +371,113 @@ function withTimeout<T>(promise: Promise<T>, ms: number = 3000): Promise<T> {
   ]);
 }
 
-// Initialize data store from Firestore or LocalStorage
-export async function initializeStore(): Promise<void> {
+let isRealtimeAttached = false;
+
+function setupRealtimeListeners() {
+  if (isRealtimeAttached) return;
+  isRealtimeAttached = true;
+
   try {
-    // Attempt to seed first with timeout
-    await withTimeout(seedDatabase(), 2500).catch((e) => {
+    // Realtime Banners Listener
+    onSnapshot(collection(db, 'banners'), (snapshot) => {
+      if (!snapshot.empty) {
+        cachedState.banners = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() } as Banner))
+          .sort((a, b) => a.order - b.order);
+        notifySubscribers();
+      }
+    }, (err) => console.warn("Realtime banner subscription error:", err));
+
+    // Realtime Reviews Listener
+    onSnapshot(collection(db, 'reviews'), (snapshot) => {
+      if (!snapshot.empty) {
+        const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+        cachedState.reviews = fetched;
+        notifySubscribers();
+      }
+    }, (err) => console.warn("Realtime review subscription error:", err));
+
+    // Realtime Offers Listener
+    onSnapshot(collection(db, 'offers'), (snapshot) => {
+      if (!snapshot.empty) {
+        cachedState.offers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Offer));
+        notifySubscribers();
+      }
+    }, (err) => console.warn("Realtime offer subscription error:", err));
+
+    // Realtime Categories Listener
+    onSnapshot(collection(db, 'categories'), (snapshot) => {
+      if (!snapshot.empty) {
+        const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+        const fallbackMap: Record<string, number> = {
+          'cat-biriyani': 1, 'cat-fastfood': 2, 'cat-burger': 3, 'cat-pizza': 4,
+          'cat-chinese': 5, 'cat-bbq': 6, 'cat-cafe': 7, 'cat-dessert': 8,
+          'cat-streetfood': 9, 'cat-drinks': 10, 'cat-seafood': 11
+        };
+        cats.sort((a, b) => {
+          const orderA = a.order ?? fallbackMap[a.id] ?? 99;
+          const orderB = b.order ?? fallbackMap[b.id] ?? 99;
+          return orderA - orderB;
+        });
+        cachedState.categories = cats;
+        notifySubscribers();
+      }
+    }, (err) => console.warn("Realtime categories subscription error:", err));
+
+    // Realtime App Settings Listener
+    onSnapshot(doc(db, 'settings', 'app'), (snapshot) => {
+      if (snapshot.exists()) {
+        const serverSettings = snapshot.data() as AppSettings;
+        cachedState.settings = {
+          ...INITIAL_STATE.settings,
+          ...serverSettings,
+          desktopLogo: serverSettings.desktopLogo || INITIAL_STATE.settings.desktopLogo,
+          mobileLogo: serverSettings.mobileLogo || INITIAL_STATE.settings.mobileLogo,
+          footerDesktopLogo: serverSettings.footerDesktopLogo || INITIAL_STATE.settings.footerDesktopLogo,
+          footerMobileLogo: serverSettings.footerMobileLogo || INITIAL_STATE.settings.footerMobileLogo,
+        };
+        notifySubscribers();
+      }
+    }, (err) => console.warn("Realtime settings subscription error:", err));
+  } catch (e) {
+    console.warn("Could not attach realtime listeners:", e);
+  }
+}
+
+// Initialize data store from Firestore or LocalStorage in parallel
+export async function initializeStore(): Promise<void> {
+  // Attach real-time listeners right away for instant synchronization
+  setupRealtimeListeners();
+
+  try {
+    // Non-blocking background seed attempt
+    withTimeout(seedDatabase(), 2000).catch((e) => {
       console.warn("Database seed skipped or timed out:", e);
     });
 
-    // Fetch Banners
-    const bannersSnap = await withTimeout(getDocs(collection(db, 'banners')), 2500);
-    if (!bannersSnap.empty) {
-      cachedState.banners = bannersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Banner)).sort((a,b) => a.order - b.order);
+    // Execute initial fetches concurrently in parallel for ultra-fast startup
+    const [bannersRes, categoriesRes, reviewsRes, offersRes, modsRes, settingsRes, msgsRes] = await Promise.allSettled([
+      withTimeout(getDocs(collection(db, 'banners')), 2500),
+      withTimeout(getDocs(collection(db, 'categories')), 2500),
+      withTimeout(getDocs(collection(db, 'reviews')), 2500),
+      withTimeout(getDocs(collection(db, 'offers')), 2500),
+      withTimeout(getDocs(collection(db, 'moderators')), 2500),
+      withTimeout(getDoc(doc(db, 'settings', 'app')), 2500),
+      withTimeout(getDocs(collection(db, 'messages')), 2500),
+    ]);
+
+    // Banners
+    if (bannersRes.status === 'fulfilled' && !bannersRes.value.empty) {
+      cachedState.banners = bannersRes.value.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Banner))
+        .sort((a, b) => a.order - b.order);
     } else if (cachedState.banners.length === 0) {
       cachedState.banners = [...INITIAL_STATE.banners];
     }
 
-    // Fetch Categories
-    const categoriesSnap = await withTimeout(getDocs(collection(db, 'categories')), 2500);
-    if (!categoriesSnap.empty) {
-      const cats = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+    // Categories
+    if (categoriesRes.status === 'fulfilled' && !categoriesRes.value.empty) {
+      const cats = categoriesRes.value.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
       const fallbackMap: Record<string, number> = {
         'cat-biriyani': 1, 'cat-fastfood': 2, 'cat-burger': 3, 'cat-pizza': 4,
         'cat-chinese': 5, 'cat-bbq': 6, 'cat-cafe': 7, 'cat-dessert': 8,
@@ -383,101 +493,53 @@ export async function initializeStore(): Promise<void> {
       cachedState.categories = [...INITIAL_STATE.categories];
     }
 
-    // Load existing local cache first if available
-    const localRaw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    let localCache: LocalState | null = null;
-    if (localRaw) {
-      try {
-        localCache = JSON.parse(localRaw);
-      } catch (e) {}
-    }
-
-    // Fetch Reviews
-    const reviewsSnap = await withTimeout(getDocs(collection(db, 'reviews')), 2500);
-    if (!reviewsSnap.empty) {
-      const fetchedReviews = reviewsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
-      cachedState.reviews = fetchedReviews.map(fRev => {
-        const localRev = localCache?.reviews?.find(r => r.id === fRev.id);
-        if (localRev) {
-          return {
-            ...fRev,
-            likes: Math.max(fRev.likes || 0, localRev.likes || 0),
-            views: Math.max(fRev.views || 0, localRev.views || 0),
-          };
-        }
-        return fRev;
-      });
+    // Reviews
+    if (reviewsRes.status === 'fulfilled' && !reviewsRes.value.empty) {
+      cachedState.reviews = reviewsRes.value.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
     } else if (cachedState.reviews.length === 0) {
       cachedState.reviews = [...INITIAL_STATE.reviews];
     }
 
-    // Fetch Offers
-    const offersSnap = await withTimeout(getDocs(collection(db, 'offers')), 2500);
-    if (!offersSnap.empty) {
-      cachedState.offers = offersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Offer));
+    // Offers
+    if (offersRes.status === 'fulfilled' && !offersRes.value.empty) {
+      cachedState.offers = offersRes.value.docs.map(doc => ({ id: doc.id, ...doc.data() } as Offer));
     } else if (cachedState.offers.length === 0) {
       cachedState.offers = [...INITIAL_STATE.offers];
     }
 
-    // Fetch Moderators
-    const modsSnap = await withTimeout(getDocs(collection(db, 'moderators')), 2500);
-    if (!modsSnap.empty) {
-      cachedState.moderators = modsSnap.docs.map(doc => {
-        const d = doc.data();
-        return { id: doc.id, ...d } as Moderator;
-      });
+    // Moderators
+    if (modsRes.status === 'fulfilled' && !modsRes.value.empty) {
+      cachedState.moderators = modsRes.value.docs.map(doc => ({ id: doc.id, ...doc.data() } as Moderator));
     } else if (cachedState.moderators.length === 0) {
       cachedState.moderators = [...INITIAL_STATE.moderators];
     }
 
-    // Fetch Settings
-    const settingsDoc = await withTimeout(getDoc(doc(db, 'settings', 'app')), 2500);
-    if (settingsDoc.exists()) {
-      const serverSettings = settingsDoc.data() as AppSettings;
+    // Settings
+    if (settingsRes.status === 'fulfilled' && settingsRes.value.exists()) {
+      const serverSettings = settingsRes.value.data() as AppSettings;
       cachedState.settings = {
         ...INITIAL_STATE.settings,
-        ...(localCache?.settings || {}),
         ...serverSettings,
-        desktopLogo: serverSettings.desktopLogo || localCache?.settings?.desktopLogo || INITIAL_STATE.settings.desktopLogo,
-        mobileLogo: serverSettings.mobileLogo || localCache?.settings?.mobileLogo || INITIAL_STATE.settings.mobileLogo,
-        footerDesktopLogo: serverSettings.footerDesktopLogo || localCache?.settings?.footerDesktopLogo || INITIAL_STATE.settings.footerDesktopLogo,
-        footerMobileLogo: serverSettings.footerMobileLogo || localCache?.settings?.footerMobileLogo || INITIAL_STATE.settings.footerMobileLogo,
+        desktopLogo: serverSettings.desktopLogo || INITIAL_STATE.settings.desktopLogo,
+        mobileLogo: serverSettings.mobileLogo || INITIAL_STATE.settings.mobileLogo,
+        footerDesktopLogo: serverSettings.footerDesktopLogo || INITIAL_STATE.settings.footerDesktopLogo,
+        footerMobileLogo: serverSettings.footerMobileLogo || INITIAL_STATE.settings.footerMobileLogo,
       };
-    } else if (localCache?.settings) {
-      cachedState.settings = { ...INITIAL_STATE.settings, ...localCache.settings };
     }
 
-    // Fetch Messages
-    try {
-      const msgsSnap = await withTimeout(getDocs(collection(db, 'messages')), 2500);
-      if (!msgsSnap.empty) {
-        cachedState.messages = msgsSnap.docs
-          .map(doc => ({ id: doc.id, ...doc.data() } as ContactMessage))
-          .sort((a,b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
-      } else if (!cachedState.messages || cachedState.messages.length === 0) {
-        cachedState.messages = [...INITIAL_STATE.messages];
-      }
-    } catch (_) {
-      if (!cachedState.messages || cachedState.messages.length === 0) {
-        cachedState.messages = [...INITIAL_STATE.messages];
-      }
+    // Messages
+    if (msgsRes.status === 'fulfilled' && !msgsRes.value.empty) {
+      cachedState.messages = msgsRes.value.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as ContactMessage))
+        .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+    } else if (!cachedState.messages || cachedState.messages.length === 0) {
+      cachedState.messages = [...INITIAL_STATE.messages];
     }
 
-    // Save to localStorage as a cache
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cachedState));
+    notifySubscribers();
   } catch (error) {
     console.warn("Firestore could not be loaded, using offline local database fallback:", error);
-    const local = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (local) {
-      try {
-        cachedState = JSON.parse(local);
-      } catch (e) {
-        cachedState = { ...INITIAL_STATE };
-      }
-    } else {
-      cachedState = { ...INITIAL_STATE };
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cachedState));
-    }
+    notifySubscribers();
   }
 }
 
