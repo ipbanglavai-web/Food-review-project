@@ -89,6 +89,27 @@ export default function App() {
     }
   }, []);
 
+  useEffect(() => {
+    let hiddenTimestamp = 0;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenTimestamp = Date.now();
+      } else if (document.visibilityState === 'visible' && hiddenTimestamp > 0) {
+        // If tab was away in background for 60+ seconds (1 minute), automatically auto-refresh to reload image cache & Firestore
+        const secondsAway = (Date.now() - hiddenTimestamp) / 1000;
+        if (secondsAway >= 60) {
+          window.location.reload();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   return (
     <AppProvider>
       <Router>
