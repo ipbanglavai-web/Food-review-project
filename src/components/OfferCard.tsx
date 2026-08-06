@@ -55,13 +55,13 @@ export const OfferCard: React.FC<OfferCardProps> = ({ offer }) => {
       )}
 
       {/* Coupon Left Ticket Section (Thumbnail) */}
-      <div className="relative w-full md:w-1/3 aspect-[16/10] md:aspect-auto bg-neutral-100 min-h-[160px]">
+      <div className="relative w-full md:w-1/3 aspect-[16/10] md:aspect-auto bg-neutral-200 min-h-[160px]">
         <img
           src={offer.thumbnail}
           alt={offer.restaurantName}
           referrerPolicy="no-referrer"
-          className="h-full w-full object-cover"
-          loading="lazy"
+          className="h-full w-full object-cover transition-all duration-300"
+          loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent md:bg-black/10" />
 

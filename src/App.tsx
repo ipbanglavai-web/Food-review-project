@@ -75,6 +75,20 @@ const AppLayout: React.FC = () => {
 };
 
 export default function App() {
+  useEffect(() => {
+    // Smoothly fade out initial preloader after React has rendered first frame
+    const loader = document.getElementById('initial-preloader');
+    if (loader) {
+      const timer = setTimeout(() => {
+        loader.classList.add('loaded');
+        setTimeout(() => {
+          loader.remove();
+        }, 500);
+      }, 80);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   return (
     <AppProvider>
       <Router>

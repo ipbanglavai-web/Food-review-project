@@ -84,13 +84,13 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ review, onLikeChanged })
       )}
 
       {/* Card Image Container */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-200">
         <img
           src={review.thumbnail}
           alt={review.restaurantName}
           referrerPolicy="no-referrer"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
+          className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105"
+          loading="eager"
         />
 
         {/* Play Button Overlay */}
