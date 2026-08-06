@@ -90,23 +90,49 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    let hiddenTimestamp = 0;
+    const handleHide = () => {
+      try {
+        sessionStorage.setItem('tab_hidden_time', Date.now().toString());
+      } catch (_) {}
+    };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        hiddenTimestamp = Date.now();
-      } else if (document.visibilityState === 'visible' && hiddenTimestamp > 0) {
-        // If tab was away in background for 60+ seconds (1 minute), automatically auto-refresh to reload image cache & Firestore
-        const secondsAway = (Date.now() - hiddenTimestamp) / 1000;
-        if (secondsAway >= 60) {
-          window.location.reload();
+    const handleShow = () => {
+      try {
+        const savedTimeStr = sessionStorage.getItem('tab_hidden_time');
+        if (savedTimeStr) {
+          const hiddenTime = parseInt(savedTimeStr, 10);
+          if (hiddenTime > 0) {
+            const secondsAway = (Date.now() - hiddenTime) / 1000;
+            if (secondsAway >= 60) {
+              sessionStorage.removeItem('tab_hidden_time');
+              window.location.reload();
+              return;
+            }
+          }
         }
+      } catch (_) {}
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleHide();
+      } else if (document.visibilityState === 'visible') {
+        handleShow();
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pagehide', handleHide);
+    window.addEventListener('pageshow', handleShow);
+    window.addEventListener('blur', handleHide);
+    window.addEventListener('focus', handleShow);
+
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pagehide', handleHide);
+      window.removeEventListener('pageshow', handleShow);
+      window.removeEventListener('blur', handleHide);
+      window.removeEventListener('focus', handleShow);
     };
   }, []);
 

@@ -193,7 +193,10 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ banners }) => {
   };
 
   // Map activeIndex back to active dot index (0 to N-1)
-  const activeDotIndex = activeIndex % N;
+  const activeDotIndex = N > 0 ? ((activeIndex % N) + N) % N : 0;
+  const currentTransformIndex = (activeIndex >= 0 && activeIndex < displayBanners.length)
+    ? activeIndex
+    : (N > 0 ? N : 0);
 
   return (
     <section 
@@ -223,7 +226,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ banners }) => {
         >
           <div 
             style={{
-              transform: `translate3d(calc(-${activeIndex * slideWidthPercent}% + ${isDragging ? touchDeltaX : 0}px), 0, 0)`,
+              transform: `translate3d(calc(-${currentTransformIndex * slideWidthPercent}% + ${isDragging ? touchDeltaX : 0}px), 0, 0)`,
               transition: isDragging ? 'none' : isTransitionEnabled ? 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)' : 'none'
             }}
             onTransitionEnd={(e) => {
@@ -248,12 +251,15 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ banners }) => {
                   <div className="relative overflow-hidden rounded-2xl md:rounded-3xl shadow-lg shadow-neutral-200/50">
                     <div className="relative aspect-[16/9] md:aspect-[21/9] w-full bg-neutral-900">
                       <img
-                        src={banner.imageUrl}
+                        src={banner.imageUrl || 'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?q=80&w=800&fit=crop'}
                         alt={banner.title}
                         referrerPolicy="no-referrer"
                         className="absolute inset-0 h-full w-full object-cover object-center pointer-events-none"
                         loading="eager"
                         draggable={false}
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?q=80&w=800&fit=crop';
+                        }}
                       />
                       
                       {/* Premium Overlay Gradient */}
