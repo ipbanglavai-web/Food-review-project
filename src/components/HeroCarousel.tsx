@@ -64,11 +64,28 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ banners }) => {
   }, []);
 
   if (!banners || N === 0) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="h-[250px] md:h-[450px] w-full rounded-2xl md:rounded-3xl bg-neutral-200 animate-pulse flex items-center justify-center" />
-      </div>
-    );
+    if (currentUser?.role === 'admin' || currentUser?.role === 'moderator') {
+      return (
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:py-6">
+          <div className="p-8 rounded-3xl bg-neutral-100 dark:bg-neutral-900 border-2 border-dashed border-red-300 dark:border-red-900/50 text-center space-y-3">
+            <h3 className="text-base font-black text-neutral-800 dark:text-neutral-200">
+              Top Nav Hero Banner
+            </h3>
+            <p className="text-xs text-neutral-500 max-w-md mx-auto">
+              No hero slider banners uploaded yet. Please upload hero banners from the admin panel.
+            </p>
+            <Link
+              to="/admin"
+              state={{ activeTab: 'banners' }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition"
+            >
+              <Edit3 size={14} /> Add Top Nav Hero Banner
+            </Link>
+          </div>
+        </div>
+      );
+    }
+    return null;
   }
 
   // Multiply the banners array to create 3 copies [A, B, C, A, B, C, A, B, C]

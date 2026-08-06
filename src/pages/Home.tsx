@@ -179,12 +179,16 @@ export const Home: React.FC<HomeProps> = ({ searchOpen, setSearchOpen }) => {
     return offers.filter((o) => o.featured && o.status === 'active');
   }, [offers]);
 
+  const heroBanners = useMemo(() => {
+    return banners.filter((b) => b.position === 'hero' || (!b.position && (b.title || !b.restaurantName)));
+  }, [banners]);
+
   return (
-    <div className="bg-neutral-50 min-h-screen pb-16">
+    <div className="bg-neutral-50 min-h-screen pb-4 sm:pb-6">
       
       {/* Hero peak banner carousel */}
       <div id="hero">
-        <HeroCarousel banners={banners} />
+        <HeroCarousel banners={heroBanners} />
       </div>
 
       {/* Tabs bar immediately below hero */}

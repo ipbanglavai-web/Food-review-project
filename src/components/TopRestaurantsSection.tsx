@@ -1,10 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Copy, Check, Tag, Sparkles } from 'lucide-react';
+import { Copy, Check, Tag, Sparkles, Edit3 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
 export const TopRestaurantsSection: React.FC = () => {
-  const { banners, offers } = useApp();
+  const { banners, currentUser } = useApp();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  // Screen width detection for responsive auto-scroll behavior
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Drag and Scroll state
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -22,55 +36,83 @@ export const TopRestaurantsSection: React.FC = () => {
   };
 
   // Dynamic banners created by admin from Firestore/context
-  const adminBanners = banners.map((b) => ({
-    id: b.id,
-    restaurantName: b.restaurantName || b.title || 'Top Restaurant',
-    image: b.imageUrl || 'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?auto=format&fit=crop&w=800&q=80',
-    discount: b.discount || 'SPECIAL DEAL',
-    tagline: b.tagline || b.subtitle || '',
-    code: b.code || '',
-    minOrder: b.minOrder || b.description || '',
-  }));
+  const adminBanners = banners
+    .filter((b) => b.position === 'top_restaurants' || (!b.position && (b.restaurantName || b.discount)))
+    .map((b) => ({
+      id: b.id,
+      restaurantName: b.restaurantName || b.title || 'Top Restaurant',
+      image: b.imageUrl || 'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?auto=format&fit=crop&w=800&q=80',
+      discount: b.discount || 'SPECIAL DEAL',
+      tagline: b.tagline || b.subtitle || '',
+      code: b.code || '',
+      minOrder: b.minOrder || b.description || '',
+    }));
 
-  const activeBanners = adminBanners;
+  const allCards = adminBanners;
 
-  // Dynamic offers from app context converted to banner cards
-  const dynamicOfferCards = offers.map((off) => ({
-    id: `dynamic-${off.id}`,
-    restaurantName: off.restaurantName,
-    image: off.thumbnail || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
-    discount: `${off.discountPercentage}% OFF`,
-    tagline: off.caption,
-    code: off.couponCode,
-    minOrder: off.shortDescription || (off.location ? `Branch: ${off.location}` : off.category),
-  }));
-
-  const allCards = [...activeBanners, ...dynamicOfferCards];
-
-  // If there are absolutely no banners or offers, hide the section
+  // If there are no top restaurant banners, show placeholder for admin/moderator or hide for visitors
   if (allCards.length === 0) {
+    if (currentUser?.role === 'admin' || currentUser?.role === 'moderator') {
+      return (
+        <section className="py-6 bg-white dark:bg-neutral-950 border-t border-neutral-100 dark:border-neutral-900">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="p-8 rounded-3xl bg-neutral-100 dark:bg-neutral-900 border-2 border-dashed border-red-300 dark:border-red-900/50 text-center space-y-3">
+              <h3 className="text-base font-black text-neutral-800 dark:text-neutral-200">
+                Top Restaurant Banner
+              </h3>
+              <p className="text-xs text-neutral-500 max-w-md mx-auto">
+                No top restaurant offer banners uploaded yet. Please upload top restaurant banners from the admin panel.
+              </p>
+              <Link
+                to="/admin"
+                state={{ activeTab: 'banners' }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition"
+              >
+                <Edit3 size={14} /> Add Top Restaurant Banner
+              </Link>
+            </div>
+          </div>
+        </section>
+      );
+    }
     return null;
   }
 
-  // Triple the array for smooth infinite marquee looping
-  const infiniteCards = [...allCards, ...allCards, ...allCards];
+  // Determine whether auto-scroll marquee should be active:
+  // - 1 banner: NEVER auto-scroll (stationary everywhere)
+  // - 2 or 3 banners: Auto-scroll on mobile (< 768px), but STATIC on desktop (>= 768px)
+  // - 4+ banners: Auto-scroll on ALL devices
+  const shouldAutoScroll =
+    allCards.length === 1
+      ? false
+      : isDesktop
+      ? allCards.length >= 4
+      : allCards.length >= 2;
 
-  // Auto-scroll loop using requestAnimationFrame
+  // Repeat array dynamically if auto-scrolling to ensure seamless infinite marquee looping
+  const repeatCount = !shouldAutoScroll ? 1 : allCards.length <= 3 ? 5 : 3;
+  const cardsToDisplay = shouldAutoScroll
+    ? Array(repeatCount).fill(allCards).flat()
+    : allCards;
+
+  // Auto-scroll loop using requestAnimationFrame (only when active)
   useEffect(() => {
+    if (!shouldAutoScroll) return;
+
     let animId: number;
 
     const scrollStep = () => {
       if (scrollRef.current && !isInteracting && !isMouseDown) {
         const container = scrollRef.current;
-        container.scrollLeft += 0.7;
+        container.scrollLeft += 0.75;
 
-        // Seamless loop wrap when reaching 2/3 of triple content
-        const maxScroll = container.scrollWidth / 3;
-        if (maxScroll > 0) {
-          if (container.scrollLeft >= maxScroll * 2) {
-            container.scrollLeft -= maxScroll;
+        // Seamless loop wrap when reaching end of repeated sets
+        const setWidth = container.scrollWidth / repeatCount;
+        if (setWidth > 0) {
+          if (container.scrollLeft >= setWidth * (repeatCount - 1)) {
+            container.scrollLeft -= setWidth;
           } else if (container.scrollLeft <= 5) {
-            container.scrollLeft += maxScroll;
+            container.scrollLeft += setWidth;
           }
         }
       }
@@ -79,16 +121,18 @@ export const TopRestaurantsSection: React.FC = () => {
 
     animId = requestAnimationFrame(scrollStep);
     return () => cancelAnimationFrame(animId);
-  }, [isInteracting, isMouseDown]);
+  }, [shouldAutoScroll, isInteracting, isMouseDown, repeatCount]);
 
-  // Set initial scroll position smoothly after layout is measured
+  // Initial scroll position alignment (only when auto-scrolling)
   useEffect(() => {
+    if (!shouldAutoScroll) return;
+
     const alignScroll = () => {
       if (scrollRef.current) {
         const container = scrollRef.current;
-        const maxScroll = container.scrollWidth / 3;
-        if (maxScroll > 0 && (container.scrollLeft <= 10 || container.scrollLeft >= maxScroll * 2.5)) {
-          container.scrollLeft = maxScroll;
+        const setWidth = container.scrollWidth / repeatCount;
+        if (setWidth > 0 && (container.scrollLeft <= 10 || container.scrollLeft >= setWidth * (repeatCount - 0.5))) {
+          container.scrollLeft = setWidth * Math.floor(repeatCount / 2);
         }
       }
     };
@@ -100,7 +144,7 @@ export const TopRestaurantsSection: React.FC = () => {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [allCards.length]);
+  }, [shouldAutoScroll, allCards.length, repeatCount]);
 
   // Mouse drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -142,8 +186,8 @@ export const TopRestaurantsSection: React.FC = () => {
   };
 
   return (
-    <section className="w-full py-8 bg-neutral-50/80 border-t border-neutral-200/80 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-5">
+    <section className="w-full pt-3 pb-6 sm:pt-4 sm:pb-7 bg-neutral-50/80 border-t border-neutral-200/80 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-3.5">
         {/* Header Layout: "Top Restaurants" + Horizontal Line (No Arrows as requested) */}
         <div className="flex items-center gap-4">
           <h2 className="text-xl sm:text-2xl font-black text-neutral-900 tracking-tight font-sans whitespace-nowrap flex items-center gap-2">
@@ -153,19 +197,22 @@ export const TopRestaurantsSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Touch & Mouse Draggable Horizontal Scroll Container */}
+      {/* Touch & Mouse Horizontal Scroll Container */}
       <div
         ref={scrollRef}
-        onMouseDown={handleMouseDown}
-        onMouseLeave={handleMouseLeaveOrUp}
-        onMouseUp={handleMouseLeaveOrUp}
-        onMouseMove={handleMouseMove}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        className="w-full overflow-x-auto no-scrollbar py-2 select-none cursor-grab active:cursor-grabbing px-4 sm:px-6 lg:px-8"
+        onMouseDown={shouldAutoScroll ? handleMouseDown : undefined}
+        onMouseLeave={shouldAutoScroll ? handleMouseLeaveOrUp : undefined}
+        onMouseUp={shouldAutoScroll ? handleMouseLeaveOrUp : undefined}
+        onMouseMove={shouldAutoScroll ? handleMouseMove : undefined}
+        onTouchStart={shouldAutoScroll ? handleTouchStart : undefined}
+        onTouchEnd={shouldAutoScroll ? handleTouchEnd : undefined}
+        className={`w-full overflow-x-auto no-scrollbar py-2 px-4 sm:px-6 lg:px-8 ${
+          shouldAutoScroll ? 'select-none cursor-grab active:cursor-grabbing touch-pan-x' : ''
+        }`}
+        style={{ WebkitOverflowScrolling: 'touch' }}
       >
-        <div className="flex gap-5 items-stretch w-max">
-          {infiniteCards.map((card, idx) => (
+        <div className={`flex gap-5 items-stretch ${shouldAutoScroll ? 'w-max' : 'w-full max-w-7xl mx-auto flex-nowrap'}`}>
+          {cardsToDisplay.map((card, idx) => (
             <div
               key={`${card.id}-${idx}`}
               className="shrink-0 w-[280px] sm:w-[320px] h-[200px] relative text-white rounded-2xl p-3.5 flex flex-col justify-between overflow-hidden border-4 border-red-600/90 hover:border-red-500 shadow-2xl group cursor-pointer bg-neutral-900 transition-transform duration-300 hover:scale-[1.02]"

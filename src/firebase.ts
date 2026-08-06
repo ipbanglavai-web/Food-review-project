@@ -23,29 +23,7 @@ export const db = initializeFirestore(app, {
 export const auth = getAuth(app);
 
 // Seed data definitions
-const DEFAULT_BANNERS = [
-  {
-    id: "banner-1",
-    imageUrl: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?q=80&w=1600&h=900&fit=crop",
-    linkUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    title: "Sultan's Dine Legendary Kacchi Biriyani - The Taste of Dhaka",
-    order: 1
-  },
-  {
-    id: "banner-2",
-    imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1600&h=900&fit=crop",
-    linkUrl: "https://www.facebook.com",
-    title: "Chillox Ultimate Smoky Burgers - Dhaka's Favorite Burger Joint",
-    order: 2
-  },
-  {
-    id: "banner-3",
-    imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1600&h=900&fit=crop",
-    linkUrl: "https://www.youtube.com",
-    title: "Woodfired Pizza Express - Crispy, Cheesy & Hot Fresh Out of Oven",
-    order: 3
-  }
-];
+const DEFAULT_BANNERS: any[] = [];
 
 const DEFAULT_CATEGORIES = [
   { id: "cat-biriyani", name: "Best Biriyani", type: "food", order: 1 },

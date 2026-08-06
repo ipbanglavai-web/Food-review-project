@@ -58,6 +58,7 @@ export interface Category {
 
 export interface Banner {
   id: string;
+  position?: 'hero' | 'top_restaurants';
   imageUrl: string;
   restaurantName?: string;
   discount?: string;

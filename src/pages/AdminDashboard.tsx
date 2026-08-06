@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { compressImageFile, compressDataUrl } from '../utils/imageCompressor';
 import { 
   Shield, 
   BarChart3, 
@@ -101,40 +102,46 @@ export const AdminDashboard: React.FC = () => {
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingBanner, setIsDraggingBanner] = useState<boolean>(false);
 
-  const handleBannerFileSelect = (file: File) => {
+  const handleBannerFileSelect = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setActionStatus({ type: 'error', message: 'Please select a valid image file (JPG, PNG, WebP, SVG, etc).' });
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        setBannerForm((prev) => ({ ...prev, imageUrl: e.target!.result as string }));
-        setActionStatus({ type: 'success', message: 'Banner image selected successfully!' });
-        setTimeout(() => setActionStatus(null), 3000);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      setIsSubmitting(true);
+      const compressed = await compressImageFile(file, 1200, 800, 0.75);
+      setBannerForm((prev) => ({ ...prev, imageUrl: compressed }));
+      setActionStatus({ type: 'success', message: 'Banner image selected & compressed for fast loading!' });
+      setTimeout(() => setActionStatus(null), 3000);
+    } catch (err) {
+      console.error("Image compression error:", err);
+      setActionStatus({ type: 'error', message: 'Failed to process selected image file.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Review photo file upload state & ref
   const reviewFileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingReviewPhoto, setIsDraggingReviewPhoto] = useState<boolean>(false);
 
-  const handleReviewFileSelect = (file: File) => {
+  const handleReviewFileSelect = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setActionStatus({ type: 'error', message: 'Please select a valid image file (JPG, PNG, WebP, SVG, etc).' });
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        setReviewForm((prev) => ({ ...prev, thumbnail: e.target!.result as string }));
-        setActionStatus({ type: 'success', message: 'Review photo uploaded successfully!' });
-        setTimeout(() => setActionStatus(null), 3000);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      setIsSubmitting(true);
+      const compressed = await compressImageFile(file, 1200, 800, 0.75);
+      setReviewForm((prev) => ({ ...prev, thumbnail: compressed }));
+      setActionStatus({ type: 'success', message: 'Review photo uploaded & compressed successfully!' });
+      setTimeout(() => setActionStatus(null), 3000);
+    } catch (err) {
+      console.error("Image compression error:", err);
+      setActionStatus({ type: 'error', message: 'Failed to process photo file.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Message filtering & modal state
@@ -310,8 +317,20 @@ export const AdminDashboard: React.FC = () => {
     type: 'food' as const
   });
 
-  // BANNER FORM STATE
-  const [bannerForm, setBannerForm] = useState({
+  // BANNER FORM STATE & FILTER
+  const [bannerPositionFilter, setBannerPositionFilter] = useState<'all' | 'hero' | 'top_restaurants'>('all');
+  const [bannerForm, setBannerForm] = useState<{
+    position: 'hero' | 'top_restaurants';
+    restaurantName: string;
+    discount: string;
+    code: string;
+    tagline: string;
+    imageUrl: string;
+    minOrder: string;
+    linkUrl: string;
+    order: number;
+  }>({
+    position: 'hero',
     restaurantName: '',
     discount: '',
     code: '',
@@ -416,11 +435,16 @@ export const AdminDashboard: React.FC = () => {
       const isModerator = currentUser?.role === 'moderator';
       const initialStatus: 'approved' | 'pending' = isModerator ? 'pending' : 'approved';
 
+      let thumb = reviewForm.thumbnail || 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?q=80&w=600&fit=crop';
+      if (thumb.startsWith('data:image')) {
+        thumb = await compressDataUrl(thumb, 1200, 800, 0.75);
+      }
+
       const reviewData = {
         restaurantName: reviewForm.restaurantName,
         foodCategory: reviewForm.foodCategory || categories.find(c => c.type === 'food')?.name || 'Best Biriyani',
         rating: Number(reviewForm.rating),
-        thumbnail: reviewForm.thumbnail || 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?q=80&w=600&fit=crop',
+        thumbnail: thumb,
         thumbnailClickLink: reviewForm.thumbnailClickLink,
         description: reviewForm.description,
         shortDescription: reviewForm.shortDescription,
@@ -479,9 +503,15 @@ export const AdminDashboard: React.FC = () => {
     e.preventDefault();
     try {
       setIsSubmitting(true);
+
+      let offerThumb = offerForm.thumbnail || 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600&fit=crop';
+      if (offerThumb.startsWith('data:image')) {
+        offerThumb = await compressDataUrl(offerThumb, 1200, 800, 0.75);
+      }
+
       const offerData = {
         restaurantName: offerForm.restaurantName,
-        thumbnail: offerForm.thumbnail || 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600&fit=crop',
+        thumbnail: offerThumb,
         caption: offerForm.caption,
         couponCode: offerForm.couponCode,
         shortDescription: offerForm.shortDescription,
@@ -573,15 +603,22 @@ export const AdminDashboard: React.FC = () => {
     e.preventDefault();
     try {
       setIsSubmitting(true);
+
+      let finalImg = bannerForm.imageUrl || 'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?q=80&w=800&fit=crop';
+      if (finalImg.startsWith('data:image')) {
+        finalImg = await compressDataUrl(finalImg, 1200, 800, 0.75);
+      }
+
       const bData = {
+        position: bannerForm.position,
         restaurantName: bannerForm.restaurantName,
         discount: bannerForm.discount,
         code: bannerForm.code ? bannerForm.code.trim() : '',
         tagline: bannerForm.tagline,
-        imageUrl: bannerForm.imageUrl || 'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?q=80&w=800&fit=crop',
+        imageUrl: finalImg,
         minOrder: bannerForm.minOrder,
         linkUrl: bannerForm.linkUrl,
-        title: bannerForm.restaurantName || bannerForm.tagline || 'Top Restaurant Banner',
+        title: bannerForm.position === 'hero' ? (bannerForm.restaurantName || bannerForm.tagline || 'Top Nav Hero Banner') : (bannerForm.restaurantName || 'Top Restaurant Banner'),
         subtitle: bannerForm.tagline,
         description: bannerForm.minOrder,
         order: Number(bannerForm.order) || 1
@@ -592,16 +629,21 @@ export const AdminDashboard: React.FC = () => {
           ...editingItem,
           ...bData
         });
-        setActionStatus({ type: 'success', message: 'Top Restaurant banner updated in Firestore successfully!' });
+        setActionStatus({ type: 'success', message: `${bannerForm.position === 'hero' ? 'Top Nav Hero' : 'Top Restaurant'} banner updated successfully!` });
       } else {
         await addBanner(bData);
-        setActionStatus({ type: 'success', message: 'Top Restaurant banner added to Firestore successfully!' });
+        setActionStatus({ type: 'success', message: `New ${bannerForm.position === 'hero' ? 'Top Nav Hero' : 'Top Restaurant'} banner added successfully!` });
       }
       setTimeout(() => setActionStatus(null), 3500);
       resetForms();
     } catch (err: any) {
-      console.error(err);
-      setActionStatus({ type: 'error', message: 'Failed to save Top Restaurant banner to Firestore.' });
+      console.error("Error saving banner:", err);
+      const msg = err?.message || '';
+      if (msg.includes('1048576') || msg.includes('exceeds maximum size')) {
+        setActionStatus({ type: 'error', message: 'Image size is too large for database (must be under 1MB). Please select a smaller photo.' });
+      } else {
+        setActionStatus({ type: 'error', message: `Failed to save banner: ${msg || 'Firestore connection error.'}` });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -662,6 +704,7 @@ export const AdminDashboard: React.FC = () => {
     });
 
     setBannerForm({
+      position: 'hero',
       restaurantName: '',
       discount: '',
       code: '',
@@ -723,6 +766,7 @@ export const AdminDashboard: React.FC = () => {
       });
     } else if (type === 'banner') {
       setBannerForm({
+        position: item.position || (item.restaurantName && item.discount ? 'top_restaurants' : 'hero'),
         restaurantName: item.restaurantName || item.title || '',
         discount: item.discount || '',
         code: item.code || '',
@@ -1617,20 +1661,19 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* SECTION 3: TOP RESTAURANTS BANNERS MANAGEMENT */}
+        {/* SECTION 3: BANNERS MANAGEMENT (HERO & TOP RESTAURANTS) */}
         {activeTab === 'banners' && (
           <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Sparkles className="text-red-600" size={22} />
-                  <span>Top Restaurants Banners</span>
+                  <span>Banners Management</span>
                   <span className="px-2.5 py-0.5 text-xs font-black bg-red-600 text-white rounded-full">
                     {banners.length}
                   </span>
                 </h2>
                 <p className="text-xs text-neutral-400 mt-1">
-                  ফুটারের উপরের &quot;Top Restaurants&quot; মারকিউ সেকশনে দেখানোর জন্য বেনার ম্যানেজ করুন।
+                  Upload and manage top navigation hero banners and top restaurant offer banners separately.
                 </p>
               </div>
 
@@ -1639,80 +1682,187 @@ export const AdminDashboard: React.FC = () => {
                   onClick={() => setShowForm(true)}
                   className="flex items-center gap-1.5 px-4 py-2.5 bg-red-600 text-white text-xs font-black uppercase rounded-xl hover:bg-red-700 transition cursor-pointer shadow-md shadow-red-600/20"
                 >
-                  <Plus size={16} /> Add Top Restaurant Banner
+                  <Plus size={16} /> Add New Banner
                 </button>
               )}
             </div>
 
+            {/* Filter Tabs for Banner Placement */}
+            <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-zinc-800 pb-3 overflow-x-auto">
+              <button
+                onClick={() => setBannerPositionFilter('all')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  bannerPositionFilter === 'all'
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'bg-neutral-100 dark:bg-zinc-800 text-neutral-600 dark:text-zinc-300 hover:bg-neutral-200'
+                }`}
+              >
+                All Banners ({banners.length})
+              </button>
+              <button
+                onClick={() => setBannerPositionFilter('hero')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  bannerPositionFilter === 'hero'
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'bg-neutral-100 dark:bg-zinc-800 text-neutral-600 dark:text-zinc-300 hover:bg-neutral-200'
+                }`}
+              >
+                Top Nav Hero ({banners.filter((b) => b.position === 'hero' || (!b.position && b.title)).length})
+              </button>
+              <button
+                onClick={() => setBannerPositionFilter('top_restaurants')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  bannerPositionFilter === 'top_restaurants'
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'bg-neutral-100 dark:bg-zinc-800 text-neutral-600 dark:text-zinc-300 hover:bg-neutral-200'
+                }`}
+              >
+                Top Restaurants ({banners.filter((b) => b.position === 'top_restaurants' || (!b.position && b.restaurantName && b.discount)).length})
+              </button>
+            </div>
+
             {showForm && (
-              <div className={`p-6 rounded-3xl border ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-neutral-100'} shadow-md max-w-2xl`}>
-                <div className="flex items-center justify-between mb-6 pb-3 border-b border-neutral-100/10">
-                  <h3 className="font-black uppercase text-sm">{editingItem ? 'Edit Top Restaurant Banner' : 'Add New Top Restaurant Banner'}</h3>
-                  <button onClick={resetForms} className="text-neutral-400 hover:text-red-500 cursor-pointer"><XCircle size={18} /></button>
+              <div className={`p-6 rounded-3xl border ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-neutral-100'} shadow-md max-w-2xl space-y-6`}>
+                <div className="flex items-center justify-between pb-3 border-b border-neutral-100/10">
+                  <h3 className="font-black uppercase text-sm">
+                    {editingItem ? 'Edit Banner' : 'Add New Banner'}
+                  </h3>
+                  <button onClick={resetForms} className="text-neutral-400 hover:text-red-500 cursor-pointer">
+                    <XCircle size={18} />
+                  </button>
                 </div>
 
                 <form onSubmit={handleBannerSubmit} className="space-y-5">
-                  {/* Restaurant Name */}
-                  <div>
-                    <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-                      Restaurant Name <span className="text-red-600">*</span>
+                  {/* Banner Placement Type Selector */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      Select Banner Placement / Type <span className="text-red-600">*</span>
                     </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. কাচ্চি ভাই (Kacchi Bhai) / Sultans Dine"
-                      value={bannerForm.restaurantName}
-                      onChange={(e) => setBannerForm((prev) => ({ ...prev, restaurantName: e.target.value }))}
-                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
-                    />
-                  </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setBannerForm((prev) => ({ ...prev, position: 'hero' }))}
+                        className={`p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+                          bannerForm.position === 'hero'
+                            ? 'border-red-600 bg-red-50/70 dark:bg-red-950/40 ring-2 ring-red-600/30'
+                            : 'border-neutral-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-neutral-300'
+                        }`}
+                      >
+                        <div>
+                          <div className="text-xs font-black text-neutral-900 dark:text-zinc-100">Top Nav Hero Banner</div>
+                          <div className="text-[11px] text-neutral-500 dark:text-zinc-400 mt-0.5">Top slider header banner for homepage</div>
+                        </div>
+                      </button>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Discount */}
-                    <div>
-                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-                        Discount <span className="text-red-600">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. 20% OFF / BUY 1 GET 1"
-                        value={bannerForm.discount}
-                        onChange={(e) => setBannerForm((prev) => ({ ...prev, discount: e.target.value }))}
-                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
-                      />
-                    </div>
-
-                    {/* Coupon Code (Optional) */}
-                    <div>
-                      <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-                        Coupon Code <span className="text-xs text-neutral-400 font-medium">(Optional - না দিলে কুপন দেখাবে না)</span>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. KACCHI20 (খালি রাখলে কুপন দেখাবে না)"
-                        value={bannerForm.code}
-                        onChange={(e) => setBannerForm((prev) => ({ ...prev, code: e.target.value }))}
-                        className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
-                      />
+                      <button
+                        type="button"
+                        onClick={() => setBannerForm((prev) => ({ ...prev, position: 'top_restaurants' }))}
+                        className={`p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+                          bannerForm.position === 'top_restaurants'
+                            ? 'border-red-600 bg-red-50/70 dark:bg-red-950/40 ring-2 ring-red-600/30'
+                            : 'border-neutral-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-neutral-300'
+                        }`}
+                      >
+                        <div>
+                          <div className="text-xs font-black text-neutral-900 dark:text-zinc-100">Top Restaurant Banner</div>
+                          <div className="text-[11px] text-neutral-500 dark:text-zinc-400 mt-0.5">Marquee offer section above footer</div>
+                        </div>
+                      </button>
                     </div>
                   </div>
 
-                  {/* Tagline / Subtitle */}
-                  <div>
-                    <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-                      Tagline / Special Slogan <span className="text-xs text-neutral-400 font-medium">(Optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. শাহী রাজকীয় কাচ্চি ধামাকা অফার"
-                      value={bannerForm.tagline}
-                      onChange={(e) => setBannerForm((prev) => ({ ...prev, tagline: e.target.value }))}
-                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
-                    />
-                  </div>
+                  {/* Inputs for Top Nav Hero Banner */}
+                  {bannerForm.position === 'hero' ? (
+                    <>
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                          Banner Title / Headline <span className="text-red-600">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Food Review BD - Best Food & Restaurant Reviews in Dhaka"
+                          value={bannerForm.restaurantName}
+                          onChange={(e) => setBannerForm((prev) => ({ ...prev, restaurantName: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
+                        />
+                      </div>
 
-                  {/* Hidden file input for file manager dialog */}
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                          Subtitle / Tagline <span className="text-xs text-neutral-400 font-medium">(Optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Honest reviews & verified discount coupon codes"
+                          value={bannerForm.tagline}
+                          onChange={(e) => setBannerForm((prev) => ({ ...prev, tagline: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    /* Inputs for Top Restaurant Marquee Banner */
+                    <>
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                          Restaurant Name <span className="text-red-600">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Kacchi Bhai / Sultan's Dine"
+                          value={bannerForm.restaurantName}
+                          onChange={(e) => setBannerForm((prev) => ({ ...prev, restaurantName: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                            Discount Offer <span className="text-red-600">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. 20% OFF / BUY 1 GET 1"
+                            value={bannerForm.discount}
+                            onChange={(e) => setBannerForm((prev) => ({ ...prev, discount: e.target.value }))}
+                            className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                            Coupon Code <span className="text-xs text-neutral-400 font-medium">(Optional)</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. KACCHI20"
+                            value={bannerForm.code}
+                            onChange={(e) => setBannerForm((prev) => ({ ...prev, code: e.target.value }))}
+                            className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                          Tagline / Special Slogan <span className="text-xs text-neutral-400 font-medium">(Optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Special Royal Kacchi Dhamaka Offer"
+                          value={bannerForm.tagline}
+                          onChange={(e) => setBannerForm((prev) => ({ ...prev, tagline: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Hidden file input */}
                   <input
                     type="file"
                     ref={bannerFileInputRef}
@@ -1761,16 +1911,18 @@ export const AdminDashboard: React.FC = () => {
                             className="max-h-48 mx-auto rounded-xl object-contain border border-neutral-200 dark:border-zinc-700 shadow-sm"
                             referrerPolicy="no-referrer"
                           />
-                          <p className="text-xs font-bold text-red-600">নতুন ছবির জন্য এখানে ক্লিক বা ড্র্যাগ করুন</p>
+                          <p className="text-xs font-bold text-red-600">Click or drag & drop to replace image</p>
                         </div>
                       ) : (
                         <>
                           <UploadCloud className="mx-auto text-neutral-400 group-hover:text-red-600 transition" size={36} />
                           <p className="text-xs font-bold text-neutral-800 dark:text-zinc-200 group-hover:text-red-600 transition">
-                            এখানে ক্লিক করে ফাইল সিলেক্ট করুন অথবা JPG বেনার ড্র্যাগ করে ছাড়ুন
+                            Click here to select file or drag & drop JPG banner
                           </p>
                           <div className="text-[11px] text-red-600 font-extrabold bg-red-50 dark:bg-red-950/40 p-2 rounded-xl inline-block mt-1">
-                            📸 প্রস্তাবিত সাইজ: ৬৪০ x ৪০০ পিক্সেল (১৬:১০ রেশিও) HD JPG ছবি
+                            {bannerForm.position === 'hero'
+                              ? 'Recommended size: 1280 x 720 px (16:9 ratio) HD JPG banner'
+                              : 'Recommended size: 640 x 400 px (16:10 ratio) HD JPG banner'}
                           </div>
                         </>
                       )}
@@ -1804,7 +1956,7 @@ export const AdminDashboard: React.FC = () => {
                       <label className="block text-[11px] font-extrabold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">Optional Target Link URL</label>
                       <input
                         type="url"
-                        placeholder="https://facebook.com/..."
+                        placeholder="https://facebook.com/... or https://youtube.com/..."
                         value={bannerForm.linkUrl}
                         onChange={(e) => setBannerForm((prev) => ({ ...prev, linkUrl: e.target.value }))}
                         className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 text-neutral-900 dark:text-zinc-100 border border-neutral-200 dark:border-zinc-700 rounded-xl text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
@@ -1824,75 +1976,103 @@ export const AdminDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* List grid of banners */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {banners.map((b) => (
-                <div key={b.id} className={`rounded-2xl overflow-hidden border ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-neutral-100'} shadow-sm flex flex-col justify-between`}>
-                  <div className="relative group overflow-hidden">
-                    <img src={b.imageUrl} className="w-full aspect-[16/10] object-cover" alt={b.restaurantName || b.title} referrerPolicy="no-referrer" />
-                    
-                    {/* Top overlay badges */}
-                    <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
-                      <span className="px-2 py-0.5 bg-black/80 backdrop-blur-md text-white text-[10px] font-black rounded-md">
-                        Order #{b.order}
-                      </span>
-                    </div>
+            {/* List grid of filtered banners */}
+            {(() => {
+              const filteredBannersList = banners.filter((b) => {
+                if (bannerPositionFilter === 'all') return true;
+                if (bannerPositionFilter === 'hero') return b.position === 'hero' || (!b.position && b.title);
+                if (bannerPositionFilter === 'top_restaurants') return b.position === 'top_restaurants' || (!b.position && b.restaurantName && b.discount);
+                return true;
+              });
 
-                    {/* Restaurant name & discount overlay simulation */}
-                    <div className="absolute top-2 right-2 z-10">
-                      <span className="px-2.5 py-1 bg-yellow-400 text-black text-xs font-black rounded-lg shadow-md">
-                        {b.discount || 'Special Offer'}
-                      </span>
-                    </div>
-
-                    <div className="absolute bottom-2 left-2 right-2 z-10">
-                      <div className="text-white text-sm font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-                        {b.restaurantName || b.title}
-                      </div>
-                    </div>
+              if (filteredBannersList.length === 0) {
+                return (
+                  <div className="text-center py-12 bg-white dark:bg-zinc-900 border border-neutral-100 dark:border-zinc-800 rounded-3xl p-8">
+                    <Sparkles className="mx-auto text-neutral-300 dark:text-zinc-700 mb-2" size={36} />
+                    <p className="text-sm font-bold text-neutral-700 dark:text-zinc-300">No banners found in this view</p>
+                    <p className="text-xs text-neutral-400 mt-1">Click &quot;Add New Banner&quot; above to upload your custom banners.</p>
                   </div>
+                );
+              }
 
-                  <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                    <div className="space-y-1.5">
-                      <h4 className="font-extrabold text-sm text-neutral-900 dark:text-zinc-100 line-clamp-1">
-                        {b.restaurantName || b.title}
-                      </h4>
-                      {b.tagline && <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 line-clamp-1">{b.tagline}</p>}
-                      
-                      <div className="pt-1">
-                        {b.code ? (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-neutral-100 dark:bg-zinc-800 rounded-lg text-xs font-bold text-red-600">
-                            <span>Coupon:</span>
-                            <code className="font-mono bg-red-600 text-white px-1.5 py-0.5 rounded text-[11px] font-black tracking-wider">
-                              {b.code}
-                            </code>
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredBannersList.map((b) => {
+                    const isHero = b.position === 'hero' || (!b.position && b.title);
+                    return (
+                      <div key={b.id} className={`rounded-2xl overflow-hidden border ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-neutral-100'} shadow-sm flex flex-col justify-between`}>
+                        <div className="relative group overflow-hidden">
+                          <img src={b.imageUrl} className="w-full aspect-[16/10] object-cover" alt={b.restaurantName || b.title} referrerPolicy="no-referrer" />
+                          
+                          {/* Top overlay badges */}
+                          <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
+                            <span className="px-2 py-0.5 bg-black/80 backdrop-blur-md text-white text-[10px] font-black rounded-md">
+                              Order #{b.order}
+                            </span>
+                            <span className={`px-2 py-0.5 backdrop-blur-md text-white text-[10px] font-black rounded-md ${isHero ? 'bg-blue-600/90' : 'bg-amber-600/90'}`}>
+                              {isHero ? 'Top Nav Hero' : 'Top Restaurant'}
+                            </span>
                           </div>
-                        ) : (
-                          <span className="inline-block text-[10px] font-semibold text-neutral-400 bg-neutral-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
-                            No Coupon Code (Display Banner Only)
-                          </span>
-                        )}
-                      </div>
-                    </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-neutral-100 dark:border-zinc-800">
-                      <button
-                        onClick={() => handleEditClick(b, 'banner')}
-                        className="text-xs font-bold uppercase text-blue-600 flex items-center gap-1 hover:underline cursor-pointer"
-                      >
-                        <Edit size={13} /> Edit
-                      </button>
-                      <button
-                        onClick={() => setDeleteTarget({ type: 'banner', id: b.id, name: b.restaurantName || b.title })}
-                        className="text-xs font-bold uppercase text-red-600 flex items-center gap-1 hover:underline cursor-pointer"
-                      >
-                        <Trash2 size={13} /> Delete Banner
-                      </button>
-                    </div>
-                  </div>
+                          {b.discount && (
+                            <div className="absolute top-2 right-2 z-10">
+                              <span className="px-2.5 py-1 bg-yellow-400 text-black text-xs font-black rounded-lg shadow-md">
+                                {b.discount}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="absolute bottom-2 left-2 right-2 z-10">
+                            <div className="text-white text-sm font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] line-clamp-1">
+                              {b.restaurantName || b.title}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                          <div className="space-y-1.5">
+                            <h4 className="font-extrabold text-sm text-neutral-900 dark:text-zinc-100 line-clamp-1">
+                              {b.restaurantName || b.title}
+                            </h4>
+                            {b.tagline && <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 line-clamp-1">{b.tagline}</p>}
+                            
+                            <div className="pt-1">
+                              {b.code ? (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-neutral-100 dark:bg-zinc-800 rounded-lg text-xs font-bold text-red-600">
+                                  <span>Coupon:</span>
+                                  <code className="font-mono bg-red-600 text-white px-1.5 py-0.5 rounded text-[11px] font-black tracking-wider">
+                                    {b.code}
+                                  </code>
+                                </div>
+                              ) : (
+                                <span className="inline-block text-[10px] font-semibold text-neutral-400 bg-neutral-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+                                  {isHero ? 'Banner Header Display' : 'Marquee Display Banner'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-3 border-t border-neutral-100 dark:border-zinc-800">
+                            <button
+                              onClick={() => handleEditClick(b, 'banner')}
+                              className="text-xs font-bold uppercase text-blue-600 flex items-center gap-1 hover:underline cursor-pointer"
+                            >
+                              <Edit size={13} /> Edit
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget({ type: 'banner', id: b.id, name: b.restaurantName || b.title })}
+                              className="text-xs font-bold uppercase text-red-600 flex items-center gap-1 hover:underline cursor-pointer"
+                            >
+                              <Trash2 size={13} /> Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </div>
         )}
 

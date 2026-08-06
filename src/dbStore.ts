@@ -621,6 +621,8 @@ export async function addBanner(banner: Omit<Banner, 'id'>): Promise<Banner> {
     await setDoc(doc(db, 'banners', newId), cleanData(newBanner));
   } catch (e) {
     console.error("Firestore error adding banner:", e);
+    cachedState.banners = cachedState.banners.filter(b => b.id !== newId);
+    saveLocalCache();
     throw e;
   }
   return newBanner;
@@ -638,6 +640,7 @@ export async function deleteBanner(id: string): Promise<void> {
 
 export async function updateBanner(banner: Banner): Promise<Banner> {
   const index = cachedState.banners.findIndex(b => b.id === banner.id);
+  const prev = index !== -1 ? { ...cachedState.banners[index] } : null;
   if (index !== -1) {
     cachedState.banners[index] = banner;
     saveLocalCache();
@@ -646,6 +649,10 @@ export async function updateBanner(banner: Banner): Promise<Banner> {
     await setDoc(doc(db, 'banners', banner.id), cleanData(banner));
   } catch (e) {
     console.error("Firestore error updating banner:", e);
+    if (index !== -1 && prev) {
+      cachedState.banners[index] = prev;
+      saveLocalCache();
+    }
     throw e;
   }
   return banner;
