@@ -67,9 +67,9 @@ export async function compressImageFile(
 
 export function compressDataUrl(
   dataUrl: string,
-  maxWidth = 1200,
-  maxHeight = 800,
-  quality = 0.75
+  maxWidth = 1000,
+  maxHeight = 667,
+  quality = 0.7
 ): Promise<string> {
   return new Promise((resolve) => {
     // If not a base64 image or small data, return as is
@@ -78,8 +78,16 @@ export function compressDataUrl(
       return;
     }
 
+    // If it's already small enough (under 300KB base64), return directly
+    if (dataUrl.length <= 300000) {
+      resolve(dataUrl);
+      return;
+    }
+
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    if (dataUrl.startsWith('http')) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onerror = () => resolve(dataUrl);
     img.onload = () => {
       let width = img.width;
@@ -104,10 +112,23 @@ export function compressDataUrl(
 
       // Smooth rendering
       ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+      ctx.imageSmoothingQuality = 'medium';
       ctx.drawImage(img, 0, 0, width, height);
 
-      const compressed = canvas.toDataURL('image/jpeg', quality);
+      let compressed = canvas.toDataURL('image/jpeg', quality);
+
+      // If still over 500KB string length, shrink canvas further
+      if (compressed.length > 500000) {
+        const shrinkCanvas = document.createElement('canvas');
+        shrinkCanvas.width = Math.round(width * 0.75);
+        shrinkCanvas.height = Math.round(height * 0.75);
+        const sCtx = shrinkCanvas.getContext('2d');
+        if (sCtx) {
+          sCtx.drawImage(canvas, 0, 0, shrinkCanvas.width, shrinkCanvas.height);
+          compressed = shrinkCanvas.toDataURL('image/jpeg', 0.6);
+        }
+      }
+
       resolve(compressed);
     };
     img.src = dataUrl;

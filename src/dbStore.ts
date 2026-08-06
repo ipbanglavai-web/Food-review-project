@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db, seedDatabase } from './firebase';
 import { Review, Offer, Moderator, Category, Banner, AppSettings, ContactMessage } from './types';
+import { compressDataUrl } from './utils/imageCompressor';
 
 // Let's create a fallback mock storage in localStorage in case firebase experiences lag or is blocked
 const LOCAL_STORAGE_KEY = 'food_review_bd_local_data';
@@ -663,12 +664,11 @@ function cleanData<T extends Record<string, any>>(data: T): Record<string, any> 
 // ADMIN CORE FUNCTIONS
 export async function saveAppSettings(settings: Partial<AppSettings>): Promise<AppSettings> {
   cachedState.settings = { ...cachedState.settings, ...settings };
-  saveLocalCache();
+  notifySubscribers();
   try {
-    await setDoc(doc(db, 'settings', 'app'), cleanData(cachedState.settings), { merge: true });
+    await withTimeout(setDoc(doc(db, 'settings', 'app'), cleanData(cachedState.settings), { merge: true }), 6000);
   } catch (e) {
-    console.error("Could not save settings to firestore:", e);
-    throw e;
+    console.warn("Firestore error saving settings (saved locally):", e);
   }
   return cachedState.settings;
 }
@@ -676,23 +676,28 @@ export async function saveAppSettings(settings: Partial<AppSettings>): Promise<A
 // BANNER MANAGEMENT
 export async function addBanner(banner: Omit<Banner, 'id'>): Promise<Banner> {
   const newId = `banner-${Date.now()}`;
-  const newBanner: Banner = { id: newId, ...banner };
+  let finalImg = banner.imageUrl || '';
+  if (finalImg.startsWith('data:image')) {
+    try {
+      finalImg = await compressDataUrl(finalImg, 1000, 667, 0.7);
+    } catch (_) {}
+  }
+
+  const newBanner: Banner = { id: newId, ...banner, imageUrl: finalImg };
   cachedState.banners.push(newBanner);
-  saveLocalCache();
+  notifySubscribers();
+
   try {
-    await setDoc(doc(db, 'banners', newId), cleanData(newBanner));
+    await withTimeout(setDoc(doc(db, 'banners', newId), cleanData(newBanner)), 6000);
   } catch (e) {
-    console.error("Firestore error adding banner:", e);
-    cachedState.banners = cachedState.banners.filter(b => b.id !== newId);
-    saveLocalCache();
-    throw e;
+    console.warn("Firestore save fallback for banner (saved in local store):", e);
   }
   return newBanner;
 }
 
 export async function deleteBanner(id: string): Promise<void> {
   cachedState.banners = cachedState.banners.filter(b => b.id !== id);
-  saveLocalCache();
+  notifySubscribers();
   try {
     await deleteDoc(doc(db, 'banners', id));
   } catch (e) {
@@ -701,23 +706,25 @@ export async function deleteBanner(id: string): Promise<void> {
 }
 
 export async function updateBanner(banner: Banner): Promise<Banner> {
+  let finalImg = banner.imageUrl || '';
+  if (finalImg.startsWith('data:image') && finalImg.length > 300000) {
+    try {
+      finalImg = await compressDataUrl(finalImg, 1000, 667, 0.7);
+    } catch (_) {}
+  }
+  const updatedBanner = { ...banner, imageUrl: finalImg };
+
   const index = cachedState.banners.findIndex(b => b.id === banner.id);
-  const prev = index !== -1 ? { ...cachedState.banners[index] } : null;
   if (index !== -1) {
-    cachedState.banners[index] = banner;
-    saveLocalCache();
+    cachedState.banners[index] = updatedBanner;
+    notifySubscribers();
   }
   try {
-    await setDoc(doc(db, 'banners', banner.id), cleanData(banner));
+    await withTimeout(setDoc(doc(db, 'banners', banner.id), cleanData(updatedBanner)), 6000);
   } catch (e) {
-    console.error("Firestore error updating banner:", e);
-    if (index !== -1 && prev) {
-      cachedState.banners[index] = prev;
-      saveLocalCache();
-    }
-    throw e;
+    console.warn("Firestore update fallback for banner (saved in local store):", e);
   }
-  return banner;
+  return updatedBanner;
 }
 
 // CATEGORY MANAGEMENT
@@ -725,19 +732,18 @@ export async function addCategory(name: string, type: 'food' | 'restaurant'): Pr
   const cleanId = `cat-${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`;
   const newCat: Category = { id: cleanId, name, type };
   cachedState.categories.push(newCat);
-  saveLocalCache();
+  notifySubscribers();
   try {
-    await setDoc(doc(db, 'categories', cleanId), cleanData(newCat));
+    await withTimeout(setDoc(doc(db, 'categories', cleanId), cleanData(newCat)), 6000);
   } catch (e) {
-    console.error("Firestore error adding category:", e);
-    throw e;
+    console.warn("Firestore error adding category (saved locally):", e);
   }
   return newCat;
 }
 
 export async function deleteCategory(id: string): Promise<void> {
   cachedState.categories = cachedState.categories.filter(c => c.id !== id);
-  saveLocalCache();
+  notifySubscribers();
   try {
     await deleteDoc(doc(db, 'categories', id));
   } catch (e) {
@@ -749,13 +755,12 @@ export async function updateCategory(cat: Category): Promise<Category> {
   const index = cachedState.categories.findIndex(c => c.id === cat.id);
   if (index !== -1) {
     cachedState.categories[index] = cat;
-    saveLocalCache();
+    notifySubscribers();
   }
   try {
-    await setDoc(doc(db, 'categories', cat.id), cleanData(cat));
+    await withTimeout(setDoc(doc(db, 'categories', cat.id), cleanData(cat)), 6000);
   } catch (e) {
-    console.error("Firestore error updating category:", e);
-    throw e;
+    console.warn("Firestore error updating category:", e);
   }
   return cat;
 }
@@ -763,20 +768,27 @@ export async function updateCategory(cat: Category): Promise<Category> {
 // REVIEW MANAGEMENT
 export async function addReview(review: Omit<Review, 'id' | 'views' | 'likes'>): Promise<Review> {
   const newId = `review-${Date.now()}`;
+  let finalThumbnail = review.thumbnail || '';
+  if (finalThumbnail.startsWith('data:image')) {
+    try {
+      finalThumbnail = await compressDataUrl(finalThumbnail, 1000, 667, 0.7);
+    } catch (_) {}
+  }
+
   const newReview: Review = {
     id: newId,
     status: review.status || 'approved',
     ...review,
+    thumbnail: finalThumbnail,
     views: 0,
     likes: 0
   };
   cachedState.reviews.unshift(newReview);
-  saveLocalCache();
+  notifySubscribers();
   try {
-    await setDoc(doc(db, 'reviews', newId), cleanData(newReview));
+    await withTimeout(setDoc(doc(db, 'reviews', newId), cleanData(newReview)), 6000);
   } catch (e) {
-    console.error("Firestore error adding review:", e);
-    throw e;
+    console.warn("Firestore error adding review (saved locally):", e);
   }
   return newReview;
 }
@@ -786,7 +798,7 @@ export async function approveReview(id: string): Promise<Review | null> {
   if (index !== -1) {
     cachedState.reviews[index].status = 'approved';
     const updated = cachedState.reviews[index];
-    saveLocalCache();
+    notifySubscribers();
     try {
       await updateDoc(doc(db, 'reviews', id), { status: 'approved' });
     } catch (e) {
@@ -798,23 +810,30 @@ export async function approveReview(id: string): Promise<Review | null> {
 }
 
 export async function updateReview(review: Review): Promise<Review> {
+  let finalThumbnail = review.thumbnail || '';
+  if (finalThumbnail.startsWith('data:image') && finalThumbnail.length > 300000) {
+    try {
+      finalThumbnail = await compressDataUrl(finalThumbnail, 1000, 667, 0.7);
+    } catch (_) {}
+  }
+  const updatedReview = { ...review, thumbnail: finalThumbnail };
+
   const index = cachedState.reviews.findIndex(r => r.id === review.id);
   if (index !== -1) {
-    cachedState.reviews[index] = review;
-    saveLocalCache();
+    cachedState.reviews[index] = updatedReview;
+    notifySubscribers();
   }
   try {
-    await setDoc(doc(db, 'reviews', review.id), cleanData(review));
+    await withTimeout(setDoc(doc(db, 'reviews', review.id), cleanData(updatedReview)), 6000);
   } catch (e) {
-    console.error("Firestore error updating review:", e);
-    throw e;
+    console.warn("Firestore error updating review:", e);
   }
-  return review;
+  return updatedReview;
 }
 
 export async function deleteReview(id: string): Promise<void> {
   cachedState.reviews = cachedState.reviews.filter(r => r.id !== id);
-  saveLocalCache();
+  notifySubscribers();
   try {
     await deleteDoc(doc(db, 'reviews', id));
   } catch (e) {
@@ -825,36 +844,49 @@ export async function deleteReview(id: string): Promise<void> {
 // OFFER MANAGEMENT
 export async function addOffer(offer: Omit<Offer, 'id'>): Promise<Offer> {
   const newId = `offer-${Date.now()}`;
-  const newOffer: Offer = { id: newId, ...offer };
+  let finalThumb = offer.thumbnail || '';
+  if (finalThumb.startsWith('data:image')) {
+    try {
+      finalThumb = await compressDataUrl(finalThumb, 1000, 667, 0.7);
+    } catch (_) {}
+  }
+
+  const newOffer: Offer = { id: newId, ...offer, thumbnail: finalThumb };
   cachedState.offers.unshift(newOffer);
-  saveLocalCache();
+  notifySubscribers();
   try {
-    await setDoc(doc(db, 'offers', newId), cleanData(newOffer));
+    await withTimeout(setDoc(doc(db, 'offers', newId), cleanData(newOffer)), 6000);
   } catch (e) {
-    console.error("Firestore error adding offer:", e);
-    throw e;
+    console.warn("Firestore error adding offer (saved locally):", e);
   }
   return newOffer;
 }
 
 export async function updateOffer(offer: Offer): Promise<Offer> {
+  let finalThumb = offer.thumbnail || '';
+  if (finalThumb.startsWith('data:image') && finalThumb.length > 300000) {
+    try {
+      finalThumb = await compressDataUrl(finalThumb, 1000, 667, 0.7);
+    } catch (_) {}
+  }
+  const updatedOffer = { ...offer, thumbnail: finalThumb };
+
   const index = cachedState.offers.findIndex(o => o.id === offer.id);
   if (index !== -1) {
-    cachedState.offers[index] = offer;
-    saveLocalCache();
+    cachedState.offers[index] = updatedOffer;
+    notifySubscribers();
   }
   try {
-    await setDoc(doc(db, 'offers', offer.id), cleanData(offer));
+    await withTimeout(setDoc(doc(db, 'offers', offer.id), cleanData(updatedOffer)), 6000);
   } catch (e) {
-    console.error("Firestore error updating offer:", e);
-    throw e;
+    console.warn("Firestore error updating offer:", e);
   }
-  return offer;
+  return updatedOffer;
 }
 
 export async function deleteOffer(id: string): Promise<void> {
   cachedState.offers = cachedState.offers.filter(o => o.id !== id);
-  saveLocalCache();
+  notifySubscribers();
   try {
     await deleteDoc(doc(db, 'offers', id));
   } catch (e) {
